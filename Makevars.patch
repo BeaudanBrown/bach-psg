@@ -1,0 +1,15 @@
+diff --git a/src/Makevars b/src/Makevars
+index 5092f7d..6495039 100644
+--- a/src/Makevars
++++ b/src/Makevars
+@@ -1,8 +1,4 @@
+ CXX_STD = CXX17
+ 
+-PKG_CPPFLAGS=-I./include/ -I$(FFTW)/include/ ${EXTRA_PKG_CPPFLAGS}
+-PKG_LIBS=include/libluna.a -L$(FFTW)/lib/ -lfftw3 ${EXTRA_PKG_LIBS}
+-
+-# redundant
+-#PKG_CPPFLAGS=-I./include/ `pkg-config --cflags fftw3`
+-#PKG_LIBS=include/libluna.a `pkg-config --libs fftw3`
++PKG_CPPFLAGS = -I${LUNA_BASE}/include/ -I${FFTW}/include/ ${EXTRA_PKG_CPPFLAGS}
++PKG_LIBS = ${LUNA_BASE}/lib/libluna.a -L${FFTW}/lib/ -lfftw3 ${EXTRA_PKG_LIBS}

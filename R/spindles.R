@@ -1,0 +1,210 @@
+library(luna)
+library(data.table)
+library(dplyr)
+
+process_edf <- function(filtered_dir, edf_path) {
+  base_name <- tools::file_path_sans_ext(basename(edf_path))
+  result <- list(
+    bach_id = base_name
+  )
+
+  filter_and_load_edf(filtered_dir, edf_path, base_name)
+
+  # N2 and N3 combined
+  leval("MASK ifnot=N2,N3 & RE")
+  result$psd <- leval("PSD spectrum")
+  result$spindles <- leval(
+    "SPINDLES fc=11,15 empirical set-empirical median"
+  )
+  lrefresh()
+  result
+}
+
+extract_raw_data <- function(filtered_dir, valid_pairs) {
+  ppt_results <- list()
+  for (edf_path in valid_pairs) {
+    base_name <- tools::file_path_sans_ext(basename(edf_path))
+    ppt_results[[base_name]] <- list()
+
+    filter_and_load_edf(filtered_dir, edf_path, base_name)
+
+    # N2
+    leval("MASK ifnot=N2 & RE")
+    ppt_results[[base_name]][["N2"]]$psd <- leval("PSD spectrum")
+    ppt_results[[base_name]][["N2"]]$spindles <- leval(
+      "SPINDLES fc=11,15 empirical set-empirical median"
+    )
+    lrefresh()
+
+    # N3
+    leval("MASK ifnot=N3 & RE")
+    ppt_results[[base_name]][["N3"]]$psd <- leval("PSD spectrum")
+    ppt_results[[base_name]][["N3"]]$spindles <- leval(
+      "SPINDLES fc=11,15 empirical set-empirical median"
+    )
+    lrefresh()
+  }
+  ppt_results
+}
+
+filter_and_load_edf <- function(filtered_dir, edf_path, base_name) {
+  xml_path <- paste0(edf_path, ".XML")
+  filtered_path <- file.path(filtered_dir, paste0(base_name, ".edf"))
+
+  if (!file.exists(filtered_path)) {
+    ledf(edf_path, base_name, xml_path)
+    leval(sprintf(
+      "EPOCH &
+      SIGNALS keep=${eeg} &
+      ARTIFACTS &
+      SIGSTATS &
+      CHEP-MASK ep-th=3,3,3 &
+      CHEP epoch &
+      DUMP-MASK annot=artifacts &
+      WRITE-ANNOTS file=%s/%s.annots &
+      WRITE edf-dir=%s",
+      filtered_dir,
+      base_name,
+      filtered_dir
+    ))
+  }
+
+  ledf(filtered_path, base_name, xml_path)
+}
+
+#reattempt <- extract_raw_data(valid_pairs)
+#saverds(reattempt, "reattempt_thresh.rds")
+
+## once this has ran successfully, you can load the values without having to redo like this
+#reattempt_thresh <- readrds("reattempt_thresh.rds")
+#first_thresh <- readrds("results2.rds")
+
+## edit: filtered out occipital channels
+#process_results <- function(first_thresh) {
+#  # todo: extract the relevant values from all the outputs
+#  spindle_thresholds_one <- rbindlist(lapply(names(first_thresh), function(id) {
+    
+#    n2_thrsh <- first_thresh[[id]]$n2$spindles$spindles$ch_f %>%
+#      dplyr::filter(ch %in% c("f3_m2", "f4_m1", "c3_m2", "c4_m1")) %>%
+#      data.table()
+#      n2_thrsh[, participant := id]
+#      n2_thrsh[, stage := "n2"]
+      
+#    n3_thrsh <- first_thresh[[id]]$n3$spindles$spindles$ch_f %>%
+#      dplyr::filter(ch %in% c("f3_m2", "f4_m1", "c3_m2", "c4_m1")) %>%
+#      data.table()
+#      n3_thrsh[, participant := id]
+#      n3_thrsh[, stage := "n3"]
+    
+    
+#   rbind(n2_thrsh, n3_thrsh)
+    
+#  }))
+#  return(spindle_thresholds_one)
+#}
+#spindle_thresholds_one <- process_results(first_thresh)
+
+##new
+#write.csv(spindle_thresh_na, "spindle_thresh_na.csv", row.names = false)
+  
+## average results to find mean spindle threshold ## edit: changed to media
+##median(results2$n2_median_spindle_thrsh)
+##median(results2$n3_median_spindle_thrsh)
+
+#median(less.than.20$empth) 8.25 
+#mean(less.than.20$empth, na.rm = true)
+
+#thresh_exl <- spindle_thresh_reattempt[empth >= 20, .(id, ch, empth, f, stage, n)]
+#length(unique(thresh_exl$id)) $74
+
+#thresh_exl_one <- spindle_thresholds_one[empth >= 20, .(id, ch, empth, f, stage, n)]
+#length(unique(thresh_exl_one$id)) 
+
+#first_thresh[empth >= 20, .n]
+
+#less.than.20 <- spindle_thresh_reattempt[empth <= 20, ]
+#length(unique(spindle_thresh_reattempt$id)) #139
+
+#greater.than.ten <- spindle_thresh_na[n >= 10]
+
+#median(greater.than.ten$empth)
+#mean(greater.than.ten$empth)
+
+#mean(results2$n2_mean_spindle_thrsh + results2$n3_mean_spindle_thrsh)
+
+#total <- sum(results2$n2_mean_spindle_thrsh, results2$n3_mean_spindle_thrsh)
+
+
+
+
+
+
+
+
+
+
+
+# Average = 9.72?
+  #N2_PSD_chf <- as.data.table(raw$N2$psd$PSD$CH_F)
+
+# Semi-cursed chatgpt code below
+# ===================================================================================
+
+# # Loop over each valid EDF-XML pair
+
+# # Combine all spindles into a single data.table
+# n2_spindles_dt <- rbindlist(results$spindles_n2, use.names = TRUE, fill = TRUE)
+# n3_spindles_dt <- rbindlist(results$spindles_n3, use.names = TRUE, fill = TRUE)
+
+# # Combine all so into a single data.table
+# n2_so_dt <- rbindlist(results$so_list_n2, use.names = TRUE, fill = TRUE)
+# n3_so_dt <- rbindlist(results$so_list_n3, use.names = TRUE, fill = TRUE)
+
+# # Combine all PSD for n2 into a data.table
+# PSD_dt_n2_chf <- rbindlist(
+#   results$psd_chf_list_n2,
+#   use.names = TRUE,
+#   fill = TRUE
+# )
+# PSD_dt_n2_bch <- rbindlist(
+#   results$psd_bch_list_n2,
+#   use.names = TRUE,
+#   fill = TRUE
+# )
+
+# # Combine all PSD for n3 into a data.table
+# PSD_dt_n3_chf <- rbindlist(
+#   results$psd_chf_list_n3,
+#   use.names = TRUE,
+#   fill = TRUE
+# )
+# PSD_dt_n3_bch <- rbindlist(
+#   results$psd_bch_list_n3,
+#   use.names = TRUE,
+#   fill = TRUE
+# )
+
+# # Save all as csv
+# save_path_csv <- "/data/eeg-bach/Results/n2_spindles_dt_t4.5.csv"
+# fwrite(n2_spindles_dt_e, file = save_path_csv)
+
+# save_path_csv <- "/data/eeg-bach/Results/n3_spindles_dt_t4.5.csv"
+# fwrite(n3_spindles_dt_e, file = save_path_csv)
+
+# save_path_csv <- "/data/eeg-bach/Results/n2_so_dt_t4.5.csv"
+# fwrite(n2_so_dt_e, file = save_path_csv)
+
+# save_path_csv <- "/data/eeg-bach/Results/n3_so_dt_t4.5.csv"
+# fwrite(n3_so_dt_e, file = save_path_csv)
+
+# save_path_csv <- "/data/eeg-bach/Results/n2_PSD_chf_dt_t4.5.csv"
+# fwrite(PSD_dt_n2_chf_e, file = save_path_csv)
+
+# save_path_csv <- "/data/eeg-bach/Results/n2_PSD_bch_dt_t4.5.csv"
+# fwrite(PSD_dt_n2_bch_e, file = save_path_csv)
+
+# save_path_csv <- "/data/eeg-bach/Results/n3_PSD_chf_dt_t4.5.csv"
+# fwrite(PSD_dt_n3_chf_e, file = save_path_csv)
+
+# save_path_csv <- "/data/eeg-bach/Results/n3_PSD_bch_dt_t4.5.csv"
+# fwrite(PSD_dt_n3_bch_e, file = save_path_csv)
