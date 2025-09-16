@@ -3,3 +3,8 @@
 _targets/
 .direnv/
 .pre-commit-config.yaml
+.Rproj.user
+.RData
+.Rhistory
+*.Rproj
+original_code/

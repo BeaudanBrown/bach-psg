@@ -4,7 +4,7 @@ library(dplyr)
 
 process_edf <- function(filtered_dir, edf_path) {
   base_name <- tools::file_path_sans_ext(basename(edf_path))
-  result <- list(
+  result <- data.table(
     bach_id = base_name
   )
 
@@ -71,6 +71,32 @@ filter_and_load_edf <- function(filtered_dir, edf_path, base_name) {
 
   ledf(filtered_path, base_name, xml_path)
 }
+
+get_empirical_threshold <- function(ppt_results, channels = c("C3_M2", "C4_M1", "F3_M2", "F4_M1"))
+{
+  CH_F <- data.table(ppt_results$spindles[[1]]$CH_F)
+  CH_F <- CH_F[CH %in% channels, ]
+  median(CH_F$EMPTH)
+}
+
+get_spindles_with_threshold <- function(filtered_dir, edf_path, threshold) {
+  base_name <- tools::file_path_sans_ext(basename(edf_path))
+  result <- data.table(
+    bach_id = base_name
+  )
+  
+  filter_and_load_edf(filtered_dir, edf_path, base_name)
+  
+  # N2 and N3 combined
+  leval("MASK ifnot=N2,N3 & RE")
+  result$psd <- leval("PSD spectrum")
+  result$spindles <- leval(
+    paste0("SPINDLES fc=11,15 th=", threshold, " so f-lwr=0.3 f-upr=4 t-neg-lwr=0.3 t-neg-upr=1.5 t-pos-lwr=0 t-pos-upr=1.0 uV-neg=-40 uV-p2p=75 nreps=100000")
+  )
+  lrefresh()
+  result
+}
+  
 
 #reattempt <- extract_raw_data(valid_pairs)
 #saverds(reattempt, "reattempt_thresh.rds")

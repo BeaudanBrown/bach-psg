@@ -106,25 +106,10 @@
         };
       in
       {
-        checks = {
-          pre-commit-check = pre-commit-hooks.lib.${system}.run {
-            src = ./.;
-            hooks = {
-              air-fmt = {
-                enable = true;
-                entry = "air format";
-                files = ".*\.[rR]$";
-              };
-            };
-          };
-        };
-
         devShells.default = pkgs.mkShell {
-          inherit (self.checks.${system}.pre-commit-check) shellHook;
           env.R_LIBS_USER = "./.Rlib";
           buildInpus = [
             pkgs.bashInteractive
-            self.checks.${system}.pre-commit-check.enabledPackages
           ];
           packages =
             with pkgs;
