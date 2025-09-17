@@ -58,6 +58,11 @@ list(
     filtered_results,
     filter_spindles_so(threshold_results),
     pattern = map(threshold_results)
+  ),
+  tar_target(
+    cleaned_results,
+    clean_angle(filtered_results),
+    pattern = map(filtered_results)
   )
 )
 
