@@ -53,6 +53,11 @@ list(
     threshold_results,
     get_spindles_with_threshold(file.path(edf_dir, "filtered"), edf_files, threshold),
     pattern = map(edf_files)
+  ),
+  tar_target(
+    filtered_results,
+    filter_spindles_so(threshold_results),
+    pattern = map(threshold_results)
   )
 )
 

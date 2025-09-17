@@ -97,7 +97,19 @@ get_spindles_with_threshold <- function(filtered_dir, edf_path, threshold) {
   result
 }
   
-
+# code added by Abby
+filter_spindles_so <- function(threshold_results) {
+  filtered_spindles <- data.table(threshold_results$spindles[[1]]$CH_F)
+  filtered_spindles <- filtered_spindles[, c("ID", "CH", "F", "N", "AMP", "CHIRP",
+                                              "DENS", "DUR", "COUPL_MAG",
+                                              "COUPL_OVERLAP", "COUPL_ANGLE",
+                                              "COUPL_OVERLAP_EMP", "COUPL_MAG_EMP",
+                                              "COUPL_OVERLAP_Z", "COUPL_MAG_Z", "Q")]
+  
+  filtered_so <- data.table(threshold_results$spindles[[1]]$CH)
+  filtered_so <- filtered_so[, c("ID", "CH", "SO", "SO_RATE", "SO_AMP_NEG", "SO_AMP_POS", "SO_AMP_P2P", "SO_DUR")]
+}
+ 
 #reattempt <- extract_raw_data(valid_pairs)
 #saverds(reattempt, "reattempt_thresh.rds")
 
