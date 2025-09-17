@@ -105,11 +105,32 @@ filter_spindles_so <- function(threshold_results) {
                                               "COUPL_OVERLAP", "COUPL_ANGLE",
                                               "COUPL_OVERLAP_EMP", "COUPL_MAG_EMP",
                                               "COUPL_OVERLAP_Z", "COUPL_MAG_Z", "Q")]
+                                             "DENS", "DUR", "COUPL_MAG",
+                                             "COUPL_OVERLAP", "COUPL_ANGLE",
+                                             "COUPL_OVERLAP_EMP", "COUPL_MAG_EMP",
+                                             "COUPL_OVERLAP_Z", "COUPL_MAG_Z", "Q")]
   
   filtered_so <- data.table(threshold_results$spindles[[1]]$CH)
   filtered_so <- filtered_so[, c("ID", "CH", "SO", "SO_RATE", "SO_AMP_NEG", "SO_AMP_POS", "SO_AMP_P2P", "SO_DUR")]
+  filtered_so <- filtered_so[, c("ID", "CH", "SO", "SO_RATE", "SO_NEG_AMP", "SO_POS_AMP", "SO_P2P", "SO_DUR")]
+  
+  merged_data <- merge(filtered_spindles, filtered_so, by = c("ID", "CH"), all = TRUE)
+  
+  return(data.table(merged_data)
+  )
+}
+
+# Make COUPL_ANGLE NA if COUPL_MAG_EMP > 0.05, ADD flag where true = coupl_mag_emp > 0.05
+clean_angle <- function(filtered_results) {
+  cleaned_angle <- copy(filtered_results)
+  cleaned_angle[, COUPL_ANGLE_EXCLUDED := COUPL_MAG_EMP > 0.05]
+  cleaned_angle[COUPLE_ANGLE_EXCLUDED == TRUE, COUPL_ANGLE := NA]
+  
+  return(clean_angle)
 }
  
+
+
 #reattempt <- extract_raw_data(valid_pairs)
 #saverds(reattempt, "reattempt_thresh.rds")
 
