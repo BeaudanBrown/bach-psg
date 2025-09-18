@@ -128,6 +128,27 @@ clean_angle <- function(filtered_results) {
   cleaned_angle[COUPL_ANGLE_EXCLUDED == TRUE, COUPL_ANGLE := NA]
 }
 
+average_channel_data <- function(ppt_data) {
+  ppt_data[
+    F == 11,
+    COUPL_ANGLE := ifelse(COUPL_ANGLE < 125, COUPL_ANGLE + 360, COUPL_ANGLE)
+  ]
+
+  result <- ppt_data[,
+    .(
+      channel = substr(CH[1], 1, 1),
+      freq = ifelse(F[1] == 11, "slow", "fast"),
+      overlap = mean(COUPL_OVERLAP_Z, na.rm = TRUE),
+      mag = mean(COUPL_MAG_Z, na.rm = TRUE),
+      angle = mean(COUPL_ANGLE, na.rm = TRUE)
+    ),
+    by = ID
+  ]
+
+  setnames(result, "ID", "bach_id")
+  result
+}
+
 # extract_raw_data <- function(filtered_dir, valid_pairs) {
 #   ppt_results <- list()
 #   for (edf_path in valid_pairs) {

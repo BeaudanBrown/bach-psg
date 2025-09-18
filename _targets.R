@@ -80,45 +80,36 @@ list(
     pattern = map(threshold_results)
   ),
   tar_target(
+    freqs,
+    c(11, 15)
+  ),
+  tar_target(
+    channels,
+    c("C", "F")
+  ),
+  tar_target(
     cleaned_results,
     clean_angle(filtered_results),
     pattern = map(filtered_results)
   ),
-  tar_map(
-    values = freqs,
-    names = name,
-    tar_map(
-      values = channels,
-      names = name,
-
-      tar_target(
-        dataset,
-        cleaned_results[F == freq & grepl(prefix, CH), ],
-        pattern = map(cleaned_results)
-      ),
-      tar_target(
-        final_dataset,
-        {
-          if (freq == 11) {
-            dataset[,
-              COUPL_ANGLE := ifelse(
-                COUPL_ANGLE < 125,
-                COUPL_ANGLE + 360,
-                COUPL_ANGLE
-              )
-            ]
-          }
-          data.table(
-            bach_id = unique(dataset$ID),
-            channel = prefix,
-            freq = freq,
-            overlap = mean(dataset$COUPL_OVERLAP_Z, na.rm = TRUE),
-            mag = mean(dataset$COUPL_MAG_Z, na.rm = TRUE),
-            angle = mean(dataset$COUPL_ANGLE, na.rm = TRUE)
-          )
-        },
-        pattern = map(dataset)
+  tar_target(
+    dataset,
+    cleaned_results[F == freqs & grepl(channels, CH), ],
+    pattern = cross(freqs, channels)
+  ),
+  tar_target(
+    final_dataset,
+    average_channel_data(dataset),
+    pattern = map(dataset)
+  ),
+  tar_target(
+    long_dataset,
+    {
+      pivot_vars <- setdiff(
+        names(final_dataset),
+        c("bach_id", "channel", "freq")
       )
-    )
+      dcast(final_dataset, bach_id ~ channel + freq, value.var = pivot_vars)
+    }
   )
 )
