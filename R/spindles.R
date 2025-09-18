@@ -72,10 +72,12 @@ filter_and_load_edf <- function(filtered_dir, edf_path, base_name) {
   ledf(filtered_path, base_name, xml_path)
 }
 
+# Added line 80, need to change line 81 to median(CH_F_excl$EMPTH)
 get_empirical_threshold <- function(ppt_results, channels = c("C3_M2", "C4_M1", "F3_M2", "F4_M1"))
 {
   CH_F <- data.table(ppt_results$spindles[[1]]$CH_F)
   CH_F <- CH_F[CH %in% channels, ]
+  # CH_F_excl <- CH_F[EMPTH < 20, ]
   median(CH_F$EMPTH)
 }
 
