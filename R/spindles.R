@@ -20,33 +20,6 @@ process_edf <- function(filtered_dir, edf_path) {
   result
 }
 
-extract_raw_data <- function(filtered_dir, valid_pairs) {
-  ppt_results <- list()
-  for (edf_path in valid_pairs) {
-    base_name <- tools::file_path_sans_ext(basename(edf_path))
-    ppt_results[[base_name]] <- list()
-
-    filter_and_load_edf(filtered_dir, edf_path, base_name)
-
-    # N2
-    leval("MASK ifnot=N2 & RE")
-    ppt_results[[base_name]][["N2"]]$psd <- leval("PSD spectrum")
-    ppt_results[[base_name]][["N2"]]$spindles <- leval(
-      "SPINDLES fc=11,15 empirical set-empirical median"
-    )
-    lrefresh()
-
-    # N3
-    leval("MASK ifnot=N3 & RE")
-    ppt_results[[base_name]][["N3"]]$psd <- leval("PSD spectrum")
-    ppt_results[[base_name]][["N3"]]$spindles <- leval(
-      "SPINDLES fc=11,15 empirical set-empirical median"
-    )
-    lrefresh()
-  }
-  ppt_results
-}
-
 filter_and_load_edf <- function(filtered_dir, edf_path, base_name) {
   xml_path <- paste0(edf_path, ".XML")
   filtered_path <- file.path(filtered_dir, paste0(base_name, ".edf"))
@@ -73,11 +46,13 @@ filter_and_load_edf <- function(filtered_dir, edf_path, base_name) {
 }
 
 # Added line 80, need to change line 81 to median(CH_F_excl$EMPTH)
-get_empirical_threshold <- function(ppt_results, channels = c("C3_M2", "C4_M1", "F3_M2", "F4_M1"))
-{
+get_empirical_threshold <- function(
+  ppt_results,
+  channels = c("C3_M2", "C4_M1", "F3_M2", "F4_M1")
+) {
   CH_F <- data.table(ppt_results$spindles[[1]]$CH_F)
-  CH_F <- CH_F[CH %in% channels, ]
-  # CH_F_excl <- CH_F[EMPTH < 20, ]
+  # Don't include maxed out EMPTH in median calc
+  CH_F <- CH_F[CH %in% channels & EMPTH < 20, ]
   median(CH_F$EMPTH)
 }
 
@@ -86,52 +61,99 @@ get_spindles_with_threshold <- function(filtered_dir, edf_path, threshold) {
   result <- data.table(
     bach_id = base_name
   )
-  
+
   filter_and_load_edf(filtered_dir, edf_path, base_name)
-  
+
   # N2 and N3 combined
   leval("MASK ifnot=N2,N3 & RE")
   result$psd <- leval("PSD spectrum")
   result$spindles <- leval(
-    paste0("SPINDLES fc=11,15 th=", threshold, " so f-lwr=0.3 f-upr=4 t-neg-lwr=0.3 t-neg-upr=1.5 t-pos-lwr=0 t-pos-upr=1.0 uV-neg=-40 uV-p2p=75 nreps=100000")
+    paste0(
+      "SPINDLES fc=11,15 sig=C3_M2,C4_M1,F3_M2,F4_M1 th=",
+      threshold,
+      " so f-lwr=0.3 f-upr=4 t-neg-lwr=0.3 t-neg-upr=1.5 t-pos-lwr=0 t-pos-upr=1.0 uV-neg=-40 uV-p2p=75 nreps=100000"
+    )
   )
   lrefresh()
   result
 }
-  
+
 # code added by Abby
 filter_spindles_so <- function(threshold_results) {
   filtered_spindles <- data.table(threshold_results$spindles[[1]]$CH_F)
-  filtered_spindles <- filtered_spindles[, c("ID", "CH", "F", "N", "AMP", "CHIRP",
-                                              "DENS", "DUR", "COUPL_MAG",
-                                              "COUPL_OVERLAP", "COUPL_ANGLE",
-                                              "COUPL_OVERLAP_EMP", "COUPL_MAG_EMP",
-                                              "COUPL_OVERLAP_Z", "COUPL_MAG_Z", "Q")]
-                                             "DENS", "DUR", "COUPL_MAG",
-                                             "COUPL_OVERLAP", "COUPL_ANGLE",
-                                             "COUPL_OVERLAP_EMP", "COUPL_MAG_EMP",
-                                             "COUPL_OVERLAP_Z", "COUPL_MAG_Z", "Q")]
-  
+  filtered_spindles <- filtered_spindles[, c(
+    "ID",
+    "CH",
+    "F",
+    "N",
+    "AMP",
+    "CHIRP",
+    "DENS",
+    "DUR",
+    "COUPL_MAG",
+    "COUPL_OVERLAP",
+    "COUPL_ANGLE",
+    "COUPL_OVERLAP_EMP",
+    "COUPL_MAG_EMP",
+    "COUPL_OVERLAP_Z",
+    "COUPL_MAG_Z",
+    "Q"
+  )]
+
   filtered_so <- data.table(threshold_results$spindles[[1]]$CH)
-  filtered_so <- filtered_so[, c("ID", "CH", "SO", "SO_RATE", "SO_AMP_NEG", "SO_AMP_POS", "SO_AMP_P2P", "SO_DUR")]
-  filtered_so <- filtered_so[, c("ID", "CH", "SO", "SO_RATE", "SO_NEG_AMP", "SO_POS_AMP", "SO_P2P", "SO_DUR")]
-  
-  merged_data <- merge(filtered_spindles, filtered_so, by = c("ID", "CH"), all = TRUE)
-  
-  return(data.table(merged_data)
+  filtered_so <- filtered_so[, c(
+    "ID",
+    "CH",
+    "SO",
+    "SO_RATE",
+    "SO_NEG_AMP",
+    "SO_POS_AMP",
+    "SO_P2P",
+    "SO_DUR"
+  )]
+
+  merged_data <- merge(
+    filtered_spindles,
+    filtered_so,
+    by = c("ID", "CH")
   )
+
+  return(data.table(merged_data))
 }
 
 # Make COUPL_ANGLE NA if COUPL_MAG_EMP > 0.05, ADD flag where true = coupl_mag_emp > 0.05
 clean_angle <- function(filtered_results) {
   cleaned_angle <- copy(filtered_results)
   cleaned_angle[, COUPL_ANGLE_EXCLUDED := COUPL_MAG_EMP > 0.05]
-  cleaned_angle[COUPLE_ANGLE_EXCLUDED == TRUE, COUPL_ANGLE := NA]
-  
-  return(clean_angle)
+  cleaned_angle[COUPL_ANGLE_EXCLUDED == TRUE, COUPL_ANGLE := NA]
 }
- 
 
+# extract_raw_data <- function(filtered_dir, valid_pairs) {
+#   ppt_results <- list()
+#   for (edf_path in valid_pairs) {
+#     base_name <- tools::file_path_sans_ext(basename(edf_path))
+#     ppt_results[[base_name]] <- list()
+
+#     filter_and_load_edf(filtered_dir, edf_path, base_name)
+
+#     # N2
+#     leval("MASK ifnot=N2 & RE")
+#     ppt_results[[base_name]][["N2"]]$psd <- leval("PSD spectrum")
+#     ppt_results[[base_name]][["N2"]]$spindles <- leval(
+#       "SPINDLES fc=11,15 empirical set-empirical median"
+#     )
+#     lrefresh()
+
+#     # N3
+#     leval("MASK ifnot=N3 & RE")
+#     ppt_results[[base_name]][["N3"]]$psd <- leval("PSD spectrum")
+#     ppt_results[[base_name]][["N3"]]$spindles <- leval(
+#       "SPINDLES fc=11,15 empirical set-empirical median"
+#     )
+#     lrefresh()
+#   }
+#   ppt_results
+# }
 
 #reattempt <- extract_raw_data(valid_pairs)
 #saverds(reattempt, "reattempt_thresh.rds")
@@ -144,22 +166,21 @@ clean_angle <- function(filtered_results) {
 #process_results <- function(first_thresh) {
 #  # todo: extract the relevant values from all the outputs
 #  spindle_thresholds_one <- rbindlist(lapply(names(first_thresh), function(id) {
-    
+
 #    n2_thrsh <- first_thresh[[id]]$n2$spindles$spindles$ch_f %>%
 #      dplyr::filter(ch %in% c("f3_m2", "f4_m1", "c3_m2", "c4_m1")) %>%
 #      data.table()
 #      n2_thrsh[, participant := id]
 #      n2_thrsh[, stage := "n2"]
-      
+
 #    n3_thrsh <- first_thresh[[id]]$n3$spindles$spindles$ch_f %>%
 #      dplyr::filter(ch %in% c("f3_m2", "f4_m1", "c3_m2", "c4_m1")) %>%
 #      data.table()
 #      n3_thrsh[, participant := id]
 #      n3_thrsh[, stage := "n3"]
-    
-    
+
 #   rbind(n2_thrsh, n3_thrsh)
-    
+
 #  }))
 #  return(spindle_thresholds_one)
 #}
@@ -167,19 +188,19 @@ clean_angle <- function(filtered_results) {
 
 ##new
 #write.csv(spindle_thresh_na, "spindle_thresh_na.csv", row.names = false)
-  
+
 ## average results to find mean spindle threshold ## edit: changed to media
 ##median(results2$n2_median_spindle_thrsh)
 ##median(results2$n3_median_spindle_thrsh)
 
-#median(less.than.20$empth) 8.25 
+#median(less.than.20$empth) 8.25
 #mean(less.than.20$empth, na.rm = true)
 
 #thresh_exl <- spindle_thresh_reattempt[empth >= 20, .(id, ch, empth, f, stage, n)]
 #length(unique(thresh_exl$id)) $74
 
 #thresh_exl_one <- spindle_thresholds_one[empth >= 20, .(id, ch, empth, f, stage, n)]
-#length(unique(thresh_exl_one$id)) 
+#length(unique(thresh_exl_one$id))
 
 #first_thresh[empth >= 20, .n]
 
@@ -195,18 +216,8 @@ clean_angle <- function(filtered_results) {
 
 #total <- sum(results2$n2_mean_spindle_thrsh, results2$n3_mean_spindle_thrsh)
 
-
-
-
-
-
-
-
-
-
-
 # Average = 9.72?
-  #N2_PSD_chf <- as.data.table(raw$N2$psd$PSD$CH_F)
+#N2_PSD_chf <- as.data.table(raw$N2$psd$PSD$CH_F)
 
 # Semi-cursed chatgpt code below
 # ===================================================================================
