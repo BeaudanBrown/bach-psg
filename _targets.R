@@ -65,6 +65,14 @@ list(
     pattern = map(edf_files)
   ),
   tar_target(
+    freqs,
+    c(11, 15)
+  ),
+  tar_target(
+    channels,
+    c("C", "F")
+  ),
+  tar_target(
     stages,
     c("N2,N3", "N2", "N3")
   ),
