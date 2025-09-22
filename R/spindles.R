@@ -172,6 +172,7 @@ average_channel_data <- function(ppt_data) {
 
   result <- ppt_data[,
     .(
+      ID = ID[1],
       channel = substr(CH[1], 1, 1),
       freq = ifelse(F[1] == 11, "slow", "fast"),
       overlap = mean(COUPL_OVERLAP_Z, na.rm = TRUE),
