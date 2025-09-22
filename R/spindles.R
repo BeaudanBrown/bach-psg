@@ -80,14 +80,19 @@ get_spindles_with_threshold <- function(filtered_dir, edf_path, threshold) {
 
 ## Get N2 spindles with threshold
 
-get_stage_spindles_with_threshold <- function(filtered_dir, edf_path, threshold, sleep_stage) {
+get_stage_spindles_with_threshold <- function(
+  filtered_dir,
+  edf_path,
+  threshold,
+  sleep_stage
+) {
   base_name <- tools::file_path_sans_ext(basename(edf_path))
   result <- data.table(
     bach_id = base_name
   )
-  
+
   filter_and_load_edf(filtered_dir, edf_path, base_name)
-  
+
   leval(paste0("MASK ifnot=", sleep_stage, " & RE"))
   result$psd <- leval("PSD spectrum")
   result$spindles <- leval(
@@ -103,8 +108,16 @@ get_stage_spindles_with_threshold <- function(filtered_dir, edf_path, threshold,
 
 # code added by Abby
 filter_spindles_so <- function(threshold_results) {
-  filtered_spindles <- data.table(threshold_results$spindles[[1]]$CH_F)
-  filtered_spindles <- filtered_spindles[, c(
+  ensure_cols <- function(x, cols) {
+    dt <- as.data.table(x)
+    missing <- setdiff(cols, names(dt))
+    if (length(missing)) {
+      dt[, (missing) := NA]
+    }
+    dt[, cols, with = FALSE]
+  }
+
+  spindle_cols <- c(
     "ID",
     "CH",
     "F",
@@ -121,10 +134,8 @@ filter_spindles_so <- function(threshold_results) {
     "COUPL_OVERLAP_Z",
     "COUPL_MAG_Z",
     "Q"
-  )]
-
-  filtered_so <- data.table(threshold_results$spindles[[1]]$CH)
-  filtered_so <- filtered_so[, c(
+  )
+  so_cols <- c(
     "ID",
     "CH",
     "SO",
@@ -133,15 +144,17 @@ filter_spindles_so <- function(threshold_results) {
     "SO_POS_AMP",
     "SO_P2P",
     "SO_DUR"
-  )]
-
-  merged_data <- merge(
-    filtered_spindles,
-    filtered_so,
-    by = c("ID", "CH")
   )
 
-  return(data.table(merged_data))
+  filtered_spindles <- ensure_cols(
+    threshold_results$spindles[[1]]$CH_F,
+    spindle_cols
+  )
+  filtered_so <- ensure_cols(threshold_results$spindles[[1]]$CH, so_cols)
+
+  merged_data <- merge(filtered_spindles, filtered_so, by = c("ID", "CH"))
+  setDT(merged_data)
+  merged_data
 }
 
 # Make COUPL_ANGLE NA if COUPL_MAG_EMP > 0.05, ADD flag where true = coupl_mag_emp > 0.05
