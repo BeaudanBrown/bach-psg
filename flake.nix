@@ -134,6 +134,7 @@
               Hmisc
               dotenv
               compositions
+              visNetwork
             ]);
         };
       }

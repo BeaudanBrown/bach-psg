@@ -5,8 +5,8 @@ library(crew)
 
 dotenv::load_dot_env()
 edf_dir <- Sys.getenv("EDF_DIR")
-# ncpus <- 3
-ncpus <- future::availableCores() - 1
+ ncpus <- 3
+#ncpus <- future::availableCores() - 1
 
 # Ensure single threaded within targets
 Sys.setenv(R_DATATABLE_NUM_THREADS = 1)
@@ -73,6 +73,56 @@ list(
       threshold
     ),
     pattern = map(edf_files)
+  ),
+  tar_target(
+    stages,
+    c("N2", "N3")
+  ),
+  tar_map(
+    values = data.table(
+      stage = c("N2", "N3")
+    ),
+    names = "stage",
+    tar_target(
+      stage_threshold_results,
+      get_stage_spindles_with_threshold(
+        file.path(edf_dir, "filtered"),
+        edf_files,
+        threshold,
+        sleep_stage = stage
+      ),
+      pattern = map(edf_files)
+    ),
+    tar_target(
+      filtered_results,
+      filter_spindles_so(stage_threshold_results),
+      pattern = map(stage_threshold_results)
+    ),
+    tar_target(
+      cleaned_results,
+      clean_angle(filtered_results),
+      pattern = map(filtered_results)
+    ),
+    tar_target(
+      dataset,
+      cleaned_results[F == freqs & grepl(channels, CH), ],
+      pattern = cross(freqs, channels)
+    ),
+    tar_target(
+      final_dataset,
+      average_channel_data(dataset),
+      pattern = map(dataset)
+    ),
+    tar_target(
+      long_dataset,
+      {
+        pivot_vars <- setdiff(
+          names(final_dataset),
+          c("bach_id", "channel", "freq")
+        )
+        dcast(final_dataset, bach_id ~ channel + freq, value.var = pivot_vars)
+      }
+    )
   ),
   tar_target(
     filtered_results,

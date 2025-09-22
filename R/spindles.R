@@ -78,6 +78,29 @@ get_spindles_with_threshold <- function(filtered_dir, edf_path, threshold) {
   result
 }
 
+## Get N2 spindles with threshold
+
+get_stage_spindles_with_threshold <- function(filtered_dir, edf_path, threshold, sleep_stage) {
+  base_name <- tools::file_path_sans_ext(basename(edf_path))
+  result <- data.table(
+    bach_id = base_name
+  )
+  
+  filter_and_load_edf(filtered_dir, edf_path, base_name)
+  
+  leval(paste0("MASK ifnot=", sleep_stage, " & RE"))
+  result$psd <- leval("PSD spectrum")
+  result$spindles <- leval(
+    paste0(
+      "SPINDLES fc=11,15 sig=C3_M2,C4_M1,F3_M2,F4_M1 th=",
+      threshold,
+      " so f-lwr=0.3 f-upr=4 t-neg-lwr=0.3 t-neg-upr=1.5 t-pos-lwr=0 t-pos-upr=1.0 uV-neg=-40 uV-p2p=75 nreps=100000"
+    )
+  )
+  lrefresh()
+  result
+}
+
 # code added by Abby
 filter_spindles_so <- function(threshold_results) {
   filtered_spindles <- data.table(threshold_results$spindles[[1]]$CH_F)
@@ -142,12 +165,13 @@ average_channel_data <- function(ppt_data) {
       mag = mean(COUPL_MAG_Z, na.rm = TRUE),
       angle = mean(COUPL_ANGLE, na.rm = TRUE)
     ),
-    by = ID
   ]
 
   setnames(result, "ID", "bach_id")
   result
 }
+
+# __________________________________________________________________
 
 # extract_raw_data <- function(filtered_dir, valid_pairs) {
 #   ppt_results <- list()
