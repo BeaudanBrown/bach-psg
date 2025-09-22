@@ -9,4 +9,5 @@ _targets/
 *.Rproj
 original_code/
 edfs/
+data/
 .Rlib
