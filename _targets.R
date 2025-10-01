@@ -71,6 +71,7 @@ list(
   tar_target(
     channels,
     c("C", "F")
+    c("C3", "F3")
   ),
   tar_target(
     outcomes,
@@ -80,6 +81,10 @@ list(
     predictors,
     c("overlap", "angle", "mag")
   ),
+  tar_target(
+    moderators,
+    c("ab4240ratio_plasma", "ptau217_mean_conc_plasma", "gfap_mean_conc_plasma")
+  ), 
   ##########################
   # Analysis pipeline
   ##########################
@@ -121,21 +126,43 @@ list(
     ),
     # Unwrap angle data and average across the 2 electrodes/channel
     tar_target(
-      channel_avg_dataset,
-      average_channel_data(dataset),
+      unwrapped_angle_dataset,
+      wrap_angle(dataset),
       pattern = map(dataset)
     ),
     # Merge spindle/so data with redcap data
     tar_target(
       merged,
-      merge(channel_avg_dataset, redcap_data, by = "ID", all.x = TRUE),
-      pattern = map(channel_avg_dataset)
+      merge(unwrapped_angle_dataset, redcap_data, by = "ID", all.x = TRUE),
+      pattern = map(unwrapped_angle_dataset)
+    ),
+    # make models
+    tar_target(
+      all_models,
+      get_model(merged, outcomes, predictors, moderators),
+      pattern = cross(cross(cross(outcomes, predictors), moderators), merged)
     ),
     # Fit model and extract parameter estimate/p val for all outcomes/predictors
     tar_target(
       model_summary,
       get_model_estimate(merged, outcomes, predictors),
       pattern = cross(cross(outcomes, predictors), merged)
+    ),
+    tar_target(
+      moderation_summary,
+      get_interaction_estimates(merged, outcomes, predictors, moderators),
+      pattern = cross(cross(cross(outcomes, predictors), moderators), merged)
     )
   )
 )
+    # combined sig model results into one data.table
+#     tar_target(
+#       model_dts,
+#       c("N2_filtered", "N23_filtered")
+#     ),
+#     tar_target(
+#       sig_model_results,
+#       get_dt_sig_results(model_dts) 
+#     )
+#   )
+# )
