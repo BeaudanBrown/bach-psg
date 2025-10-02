@@ -70,7 +70,6 @@ list(
   ),
   tar_target(
     channels,
-    c("C", "F")
     c("C3", "F3")
   ),
   tar_target(
@@ -121,7 +120,7 @@ list(
     # Get dataset with each combination of frequency and channel
     tar_target(
       dataset,
-      cleaned_results[F == freqs & grepl(channels, CH), ],
+      cleaned_results[F == freqs & CH %in% paste0(channels, "_M2"), ],
       pattern = cross(freqs, channels)
     ),
     # Unwrap angle data and average across the 2 electrodes/channel
@@ -133,7 +132,7 @@ list(
     # Merge spindle/so data with redcap data
     tar_target(
       merged,
-      merge(unwrapped_angle_dataset, redcap_data, by = "ID", all.x = TRUE),
+      merge(dataset, redcap_data, by = "ID", all.x = TRUE),
       pattern = map(unwrapped_angle_dataset)
     ),
     # make models

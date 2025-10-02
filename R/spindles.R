@@ -72,7 +72,7 @@ get_stage_spindles_with_threshold <- function(
   result$psd <- leval("PSD spectrum")
   result$spindles <- leval(
     paste0(
-      "SPINDLES fc=11,15 sig=C3_M2, F3_M2, th=",
+      "SPINDLES fc=11,15 sig=C3_M2,F3_M2 th=",
       threshold,
       " so f-lwr=0.3 f-upr=4 t-neg-lwr=0.3 t-neg-upr=1.5 t-pos-lwr=0 t-pos-upr=1.0 uV-neg=-40 uV-p2p=75 nreps=100000"
     )
@@ -143,36 +143,43 @@ wrap_angle <- function(ppt_data) {
     F == 11,
     COUPL_ANGLE := ifelse(COUPL_ANGLE < 125, COUPL_ANGLE + 360, COUPL_ANGLE)
   ]
-
-  # result <- ppt_data[,
-  #   .(
-  #     channel = substr(CH[1], 1, 1),
-  #     freq = ifelse(F[1] == 11, "slow", "fast"),
-  #     overlap = mean(COUPL_OVERLAP_Z, na.rm = TRUE),
-  #     mag = mean(COUPL_MAG_Z, na.rm = TRUE),
-  #     angle = mean(COUPL_ANGLE, na.rm = TRUE),
-  #     spindle_count = mean(N, na.rm = TRUE),
-  #     spindle_amplitude = mean(AMP, na.rm = TRUE),
-  #     spindle_chirp = mean(CHIRP, na.rm = TRUE),
-  #     spindle_density = mean(DENS, na.rm = TRUE),
-  #     spindle_duration = mean(DUR, na.rm = TRUE),
-  #     magnitude_raw = mean(COUPL_MAG, na.rm = TRUE),
-  #     overlap_raw = mean(COUPL_OVERLAP, na.rm = TRUE),
-  #     SO_count = mean(SO, na.rm = TRUE),
-  #     SO_rate = mean(SO_RATE, na.rm = TRUE),
-  #     SO_neg_amplitude = mean(SO_NEG_AMP, na.rm = TRUE),
-  #     SO_pos_amplitude = mean(SO_POS_AMP, na.rm = TRUE),
-  #     SO_peak_to_peak_amplitude = mean(SO_P2P, na.rm = TRUE),
-  #     SO_duration = mean(SO_DUR, na.rm = TRUE)
-  #   ),
-  #   by = ID
-  # ]
-
-  result <- ppt_data
+  
+  safe_mean <- function(x) {
+    if(all(is.na(x))) {
+      return(NA_real_)
+      } else {
+        return(mean(x, na.rm = TRUE))
+      }
+  }
+  
+  result <- ppt_data[,
+    .(
+      channel = substr(CH[1], 1, 1),
+      freq = ifelse(F[1] == 11, "slow", "fast"),
+      overlap = safe_mean(COUPL_OVERLAP_Z),
+      mag = safe_mean(COUPL_MAG_Z),
+      angle = safe_mean(COUPL_ANGLE),
+      spindle_count = safe_mean(N),
+      spindle_amplitude = safe_mean(AMP),
+      spindle_chirp = safe_mean(CHIRP),
+      spindle_density = safe_mean(DENS),
+      spindle_duration = safe_mean(DUR),
+      magnitude_raw = safe_mean(COUPL_MAG),
+      overlap_raw = safe_mean(COUPL_OVERLAP),
+      SO_count = safe_mean(SO),
+      SO_rate = safe_mean(SO_RATE),
+      SO_neg_amplitude = safe_mean(SO_NEG_AMP),
+      SO_pos_amplitude = safe_mean(SO_POS_AMP),
+      SO_peak_to_peak_amplitude = safe_mean(SO_P2P),
+      SO_duration = safe_mean(SO_DUR)
+    ),
+    by = ID
+  ]
   result
 }
 
 get_model_estimate <- function(df, outcome, predictor) {
+
   formula_str <- paste0(
     outcome,
     " ~ ",
@@ -243,6 +250,7 @@ get_interaction_estimates <- function(df, outcome, predictor, moderator) {
   ]
   result
 }
+
 
 #################################################
 # number of exclued angle values
