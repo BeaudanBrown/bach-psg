@@ -72,7 +72,7 @@ get_stage_spindles_with_threshold <- function(
   result$psd <- leval("PSD spectrum")
   result$spindles <- leval(
     paste0(
-      "SPINDLES fc=11,15 sig=C3_M2,F3_M2 th=",
+      "SPINDLES fc=11,15 sig=C3_M2,C4_M1,F3_M2,F4_M1 th=",
       threshold,
       " so f-lwr=0.3 f-upr=4 t-neg-lwr=0.3 t-neg-upr=1.5 t-pos-lwr=0 t-pos-upr=1.0 uV-neg=-40 uV-p2p=75 nreps=100000"
     )

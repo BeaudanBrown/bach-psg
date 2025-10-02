@@ -47,20 +47,20 @@ list(
   ##########################
   # Threshold calculation
   ##########################
-  tar_target(
-    edf_results,
-    process_edf(file.path(edf_dir, "filtered"), edf_files),
-    pattern = map(edf_files)
-  ),
-  tar_target(
-    per_ppt_thresholds,
-    get_empirical_threshold(edf_results),
-    pattern = map(edf_results)
-  ),
-  tar_target(
-    threshold,
-    median(per_ppt_thresholds, na.rm = TRUE)
-  ),
+  # tar_target(
+  #   edf_results,
+  #   process_edf(file.path(edf_dir, "filtered"), edf_files),
+  #   pattern = map(edf_files)
+  # ),
+  # tar_target(
+  #   per_ppt_thresholds,
+  #   get_empirical_threshold(edf_results),
+  #   pattern = map(edf_results)
+  # ),
+  # tar_target(
+  #   threshold,
+  #   median(per_ppt_thresholds, na.rm = TRUE)
+  # ),
   ##########################
   # Branching constants
   ##########################
@@ -95,15 +95,19 @@ list(
     ),
     names = "name",
     # Run Luna to get spindle/SO data for given mask
+    # tar_target(
+    #   stage_threshold_results,
+    #   get_stage_spindles_with_threshold(
+    #     file.path(edf_dir, "filtered"),
+    #     edf_files,
+    #     threshold,
+    #     sleep_stage = mask
+    #   ),
+    #   pattern = map(edf_files)
+    # ),(
     tar_target(
       stage_threshold_results,
-      get_stage_spindles_with_threshold(
-        file.path(edf_dir, "filtered"),
-        edf_files,
-        threshold,
-        sleep_stage = mask
-      ),
-      pattern = map(edf_files)
+      readRDS(paste0("./threshold_results_", name, ".rds"))
     ),
     # Combine spindle and SO data into a data.table with relevant columns
     tar_target(
@@ -120,20 +124,20 @@ list(
     # Get dataset with each combination of frequency and channel
     tar_target(
       dataset,
-      cleaned_results[F == freqs & CH %in% paste0(channels, "_M2"), ],
+      cleaned_results[F == freqs & grepl(channels, CH), ],
       pattern = cross(freqs, channels)
     ),
     # Unwrap angle data and average across the 2 electrodes/channel
     tar_target(
-      unwrapped_angle_dataset,
+      wrapped_dataset,
       wrap_angle(dataset),
       pattern = map(dataset)
     ),
     # Merge spindle/so data with redcap data
     tar_target(
       merged,
-      merge(dataset, redcap_data, by = "ID", all.x = TRUE),
-      pattern = map(unwrapped_angle_dataset)
+      merge(wrapped_dataset, redcap_data, by = "ID", all.x = TRUE),
+      pattern = map(wrapped_dataset)
     ),
     # make models
     tar_target(
@@ -151,6 +155,14 @@ list(
       moderation_summary,
       get_interaction_estimates(merged, outcomes, predictors, moderators),
       pattern = cross(cross(cross(outcomes, predictors), moderators), merged)
+    ),
+    tar_target(
+      significant_results,
+      moderation_summary[`Pr(>|t|)` < .05, ]
+    ),
+    tar_target(
+      significant_model_results,
+      model_summary[`Pr(>|t|)` < .05, ]
     )
   )
 )
