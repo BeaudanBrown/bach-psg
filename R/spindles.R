@@ -10,14 +10,14 @@ process_edf <- function(filtered_dir, edf_path) {
 
   filter_and_load_edf(filtered_dir, edf_path, base_name)
 
-  # N2 and N3 combined
-  leval("MASK ifnot=N2,N3 & RE")
-  result$psd <- leval("PSD spectrum")
-  result$spindles <- leval(
-    "SPINDLES fc=11,15 empirical set-empirical median"
-  )
-  lrefresh()
-  result
+  ## N2 and N3 combined
+#   leval("MASK ifnot=N2,N3 & RE")
+#   result$psd <- leval("PSD spectrum")
+#   result$spindles <- leval(
+#     "SPINDLES fc=11,15 empirical set-empirical median"
+#   )
+#   lrefresh()
+#   result
 }
 
 filter_and_load_edf <- function(filtered_dir, edf_path, base_name) {
@@ -47,7 +47,7 @@ filter_and_load_edf <- function(filtered_dir, edf_path, base_name) {
 
 get_empirical_threshold <- function(
   ppt_results,
-  channels = c("C3_M2", "F3_M2")
+  channels = c("C3_M2", "C4_M1")
 ){
   CH_F <- data.table(ppt_results$spindles[[1]]$CH_F)
   # Don't include maxed out EMPTH in median calc
@@ -132,7 +132,7 @@ filter_spindles_so <- function(threshold_results) {
 }
 
 # Make COUPL_ANGLE NA if COUPL_MAG_EMP > 0.05, ADD flag where true = coupl_mag_emp > 0.05
-clean_angle <- function(filtered_results) {
+clean_cangle <- function(filtered_results) {
   cleaned_angle <- copy(filtered_results)
   cleaned_angle[, COUPL_ANGLE_EXCLUDED := COUPL_MAG_EMP > 0.05]
   cleaned_angle[COUPL_ANGLE_EXCLUDED == TRUE, COUPL_ANGLE := NA]
@@ -171,7 +171,9 @@ wrap_angle <- function(ppt_data) {
       SO_neg_amplitude = safe_mean(SO_NEG_AMP),
       SO_pos_amplitude = safe_mean(SO_POS_AMP),
       SO_peak_to_peak_amplitude = safe_mean(SO_P2P),
-      SO_duration = safe_mean(SO_DUR)
+      SO_duration = safe_mean(SO_DUR),
+      overlap_empirical = safe_mean(COUPL_OVERLAP_EMP),
+      mag_empirical = safe_mean(COUPL_MAG_EMP)
     ),
     by = ID
   ]
@@ -206,32 +208,32 @@ get_model_estimate <- function(df, outcome, predictor) {
 
 get_model <- function(df, outcome, predictor, moderator) {
   interaction_term <- paste0(predictor, ":", moderator)
-  
+
   formula_str <- paste0(
     outcome,
     " ~ ",
     predictor,
     " * ",
-    moderator, 
+    moderator,
     " + age + sex + education_centered + apoe_e4_status + psg_ahi_total_nrem + psg_tst + psg_waso"
   )
-  
+
   model <- lm(as.formula(formula_str), data = df)
   model
 }
 
 get_interaction_estimates <- function(df, outcome, predictor, moderator) {
   interaction_term <- paste0(predictor, ":", moderator)
-  
+
   formula_str <- paste0(
     outcome,
     " ~ ",
     predictor,
     " * ",
-    moderator, 
+    moderator,
     " + age + sex + education_centered + apoe_e4_status + psg_ahi_total_nrem + psg_tst + psg_waso"
   )
-  
+
   model <- lm(as.formula(formula_str), data = df)
   summary <- summary(model)
   # rn is default rowname when keep.rownames = TRUE
@@ -253,13 +255,34 @@ get_interaction_estimates <- function(df, outcome, predictor, moderator) {
 
 
 #################################################
-# number of exclued angle values
-# excluded_summary <- cleaned_results[
-#   COUPL_ANGLE_EXCLUDED == TRUE, 
-#   .(excluded_count = .N),        
-#   by = .(F, CH)          
+#number of exclued angle values
+# NREM_excluded_summary <- cleaned_results_N23[
+#   COUPL_ANGLE_EXCLUDED == TRUE,
+#   .(excluded_count = .N),
+#   by = .(F, CH)
 # ]
+
+###############################################
+# calculating % of empirical p-values > .05
+
+#N2
+#filtering for slow central
+# NREM_slow_central <- subset(cleaned_results_N23, F == 11 & CH == "C3_M2")
+# NREM_slow_frontal <- subset(cleaned_results_N23, F == 11 & CH == "F3_M2") 
 # 
+# NREM_fast_central <- subset(cleaned_results_N23, F == 15 & CH == "C3_M2") 
+# NREM_fast_frontal <- subset(cleaned_results_N23, F == 15 & CH == "F3_M2") 
+
+##########################
+#sig_overlap
+
+###############
+# sig_overlap <- unique(N2_slow_central$ID[N2_slow_central$COUPL_OVERLAP_EMP < .05])
+# sig_overlap_count <- lengths(sig_overlap)
+# 
+# total_overlap <- length(unique(N2_slow_central$ID)) #138
+# 
+# percentage <- (sig_overlap_count / total_overlap) * 100
 
 # # check event count per channel and freq
 # summary_table <- filtered_results %>%

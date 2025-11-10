@@ -47,20 +47,20 @@ list(
   ##########################
   # Threshold calculation
   ##########################
-  # tar_target(
-  #   edf_results,
-  #   process_edf(file.path(edf_dir, "filtered"), edf_files),
-  #   pattern = map(edf_files)
-  # ),
-  # tar_target(
-  #   per_ppt_thresholds,
-  #   get_empirical_threshold(edf_results),
-  #   pattern = map(edf_results)
-  # ),
-  # tar_target(
-  #   threshold,
-  #   median(per_ppt_thresholds, na.rm = TRUE)
-  # ),
+  tar_target(
+    edf_results,
+    process_edf(file.path(edf_dir, "filtered"), edf_files),
+    pattern = map(edf_files)
+  ),
+  tar_target(
+    per_ppt_thresholds,
+    get_empirical_threshold(edf_results),
+    pattern = map(edf_results)
+  ),
+  tar_target(
+    threshold,
+    median(per_ppt_thresholds, na.rm = TRUE)
+  ),
   ##########################
   # Branching constants
   ##########################
@@ -70,7 +70,7 @@ list(
   ),
   tar_target(
     channels,
-    c("C3", "F3")
+    c("C3", "C4")
   ),
   tar_target(
     outcomes,
@@ -90,25 +90,33 @@ list(
   tar_map(
     # Sleep stage masks
     values = data.table(
-      mask = c("N2,N3", "N2", "N3"),
-      name = c("N23", "N2", "N3")
+      mask = c("N2", "N3"),
+      name = c("N2", "N3")
     ),
     names = "name",
     # Run Luna to get spindle/SO data for given mask
+    tar_target(
+      stage_threshold_results,
+      get_stage_spindles_with_threshold(
+        file.path(edf_dir, "filtered"),
+        edf_files,
+        threshold,
+        sleep_stage = mask
+      ),
+      pattern = map(edf_files)
+    ),
     # tar_target(
     #   stage_threshold_results,
     #   get_stage_spindles_with_threshold(
-    #     file.path(edf_dir, "filtered"),
-    #     edf_files,
-    #     threshold,
-    #     sleep_stage = mask
+    #   file.path(edf_dir, "filtered"),
+    #   edf_files,
+    #   threshold,
+    #   sleep_stage = mask
     #   ),
-    #   pattern = map(edf_files)
-    # ),(
-    tar_target(
-      stage_threshold_results,
-      readRDS(paste0("./threshold_results_", name, ".rds"))
-    ),
+        #   pattern = map(edf_files)
+        # ),
+    #   readRDS(paste0("./threshold_results_", name, ".rds"))
+    # ),
     # Combine spindle and SO data into a data.table with relevant columns
     tar_target(
       filtered_results,
