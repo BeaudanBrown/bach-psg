@@ -136,7 +136,7 @@ filter_spindles_so <- function(threshold_results) {
 }
 
 # Make COUPL_ANGLE NA if COUPL_MAG_EMP > 0.05, ADD flag where true = coupl_mag_emp > 0.05
-clean_cangle <- function(filtered_results) {
+clean_angle <- function(filtered_results) {
   cleaned_angle <- copy(filtered_results)
   cleaned_angle[, COUPL_ANGLE_EXCLUDED := COUPL_MAG_EMP > 0.05]
   cleaned_angle[COUPL_ANGLE_EXCLUDED == TRUE, COUPL_ANGLE := NA]
