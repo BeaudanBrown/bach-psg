@@ -5,6 +5,9 @@ library(dplyr)
 process_edf <- function(edf_path) {
   filtered_dir <- file.path(dirname(edf_path), "filtered")
   base_name <- tools::file_path_sans_ext(basename(edf_path))
+  if (!dir.exists(filtered_dir)) {
+    dir.create(filtered_dir)
+  }
   filter_and_load_edf(filtered_dir, edf_path, base_name)
 
   result <- data.table(
