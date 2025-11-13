@@ -49,7 +49,7 @@ list(
   ##########################
   tar_target(
     edf_results,
-    process_edf(file.path(edf_dir, "filtered"), edf_files),
+    process_edf(edf_files),
     pattern = map(edf_files)
   ),
   tar_target(
@@ -83,7 +83,7 @@ list(
   tar_target(
     moderators,
     c("ab4240ratio_plasma", "ptau217_mean_conc_plasma", "gfap_mean_conc_plasma")
-  ), 
+  ),
   ##########################
   # Analysis pipeline
   ##########################
@@ -113,8 +113,8 @@ list(
     #   threshold,
     #   sleep_stage = mask
     #   ),
-        #   pattern = map(edf_files)
-        # ),
+    #   pattern = map(edf_files)
+    # ),
     #   readRDS(paste0("./threshold_results_", name, ".rds"))
     # ),
     # Combine spindle and SO data into a data.table with relevant columns
@@ -174,14 +174,14 @@ list(
     )
   )
 )
-    # combined sig model results into one data.table
+# combined sig model results into one data.table
 #     tar_target(
 #       model_dts,
 #       c("N2_filtered", "N23_filtered")
 #     ),
 #     tar_target(
 #       sig_model_results,
-#       get_dt_sig_results(model_dts) 
+#       get_dt_sig_results(model_dts)
 #     )
 #   )
 # )

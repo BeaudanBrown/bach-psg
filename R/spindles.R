@@ -2,22 +2,10 @@ library(luna)
 library(data.table)
 library(dplyr)
 
-process_edf <- function(filtered_dir, edf_path) {
+process_edf <- function(edf_path) {
+  filtered_dir <- file.path(dirname(edf_path), "filtered")
   base_name <- tools::file_path_sans_ext(basename(edf_path))
-  result <- data.table(
-    bach_id = base_name
-  )
-
   filter_and_load_edf(filtered_dir, edf_path, base_name)
-
-  ## N2 and N3 combined
-#   leval("MASK ifnot=N2,N3 & RE")
-#   result$psd <- leval("PSD spectrum")
-#   result$spindles <- leval(
-#     "SPINDLES fc=11,15 empirical set-empirical median"
-#   )
-#   lrefresh()
-#   result
 }
 
 filter_and_load_edf <- function(filtered_dir, edf_path, base_name) {
@@ -48,7 +36,7 @@ filter_and_load_edf <- function(filtered_dir, edf_path, base_name) {
 get_empirical_threshold <- function(
   ppt_results,
   channels = c("C3_M2", "C4_M1")
-){
+) {
   CH_F <- data.table(ppt_results$spindles[[1]]$CH_F)
   # Don't include maxed out EMPTH in median calc
   CH_F <- CH_F[CH %in% channels & EMPTH < 20, ]
@@ -143,15 +131,15 @@ wrap_angle <- function(ppt_data) {
     F == 11,
     COUPL_ANGLE := ifelse(COUPL_ANGLE < 125, COUPL_ANGLE + 360, COUPL_ANGLE)
   ]
-  
+
   safe_mean <- function(x) {
-    if(all(is.na(x))) {
+    if (all(is.na(x))) {
       return(NA_real_)
-      } else {
-        return(mean(x, na.rm = TRUE))
-      }
+    } else {
+      return(mean(x, na.rm = TRUE))
+    }
   }
-  
+
   result <- ppt_data[,
     .(
       channel = substr(CH[1], 1, 1),
@@ -181,7 +169,6 @@ wrap_angle <- function(ppt_data) {
 }
 
 get_model_estimate <- function(df, outcome, predictor) {
-
   formula_str <- paste0(
     outcome,
     " ~ ",
@@ -243,16 +230,15 @@ get_interaction_estimates <- function(df, outcome, predictor, moderator) {
   setnames(result, "rn", "interaction_term")
   df[, list(ID, freq, channel)]
   result[,
-         c("outcome", "freq", "channel", "n") := list(
-           outcome,
-           unique(df$freq),
-           unique(df$channel),
-           sum(complete.cases(df[, .SD, .SDcols = c(predictor, moderator)]))
-         )
+    c("outcome", "freq", "channel", "n") := list(
+      outcome,
+      unique(df$freq),
+      unique(df$channel),
+      sum(complete.cases(df[, .SD, .SDcols = c(predictor, moderator)]))
+    )
   ]
   result
 }
-
 
 #################################################
 #number of exclued angle values
@@ -268,10 +254,10 @@ get_interaction_estimates <- function(df, outcome, predictor, moderator) {
 #N2
 #filtering for slow central
 # NREM_slow_central <- subset(cleaned_results_N23, F == 11 & CH == "C3_M2")
-# NREM_slow_frontal <- subset(cleaned_results_N23, F == 11 & CH == "F3_M2") 
-# 
-# NREM_fast_central <- subset(cleaned_results_N23, F == 15 & CH == "C3_M2") 
-# NREM_fast_frontal <- subset(cleaned_results_N23, F == 15 & CH == "F3_M2") 
+# NREM_slow_frontal <- subset(cleaned_results_N23, F == 11 & CH == "F3_M2")
+#
+# NREM_fast_central <- subset(cleaned_results_N23, F == 15 & CH == "C3_M2")
+# NREM_fast_frontal <- subset(cleaned_results_N23, F == 15 & CH == "F3_M2")
 
 ##########################
 #sig_overlap
@@ -279,9 +265,9 @@ get_interaction_estimates <- function(df, outcome, predictor, moderator) {
 ###############
 # sig_overlap <- unique(N2_slow_central$ID[N2_slow_central$COUPL_OVERLAP_EMP < .05])
 # sig_overlap_count <- lengths(sig_overlap)
-# 
+#
 # total_overlap <- length(unique(N2_slow_central$ID)) #138
-# 
+#
 # percentage <- (sig_overlap_count / total_overlap) * 100
 
 # # check event count per channel and freq
@@ -289,7 +275,7 @@ get_interaction_estimates <- function(df, outcome, predictor, moderator) {
 #   filter(!is.na(F)) %>%
 #   group_by(CH, F) %>%
 #   summarise(
-#     total_spindles = sum(N, na.rm = TRUE),                   
+#     total_spindles = sum(N, na.rm = TRUE),
 #     mean = mean(N, na.rm = TRUE),
 #     sd = sd(N, na.rm = TRUE)
 #   ) %>%
