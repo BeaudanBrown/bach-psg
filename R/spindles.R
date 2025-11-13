@@ -6,6 +6,19 @@ process_edf <- function(edf_path) {
   filtered_dir <- file.path(dirname(edf_path), "filtered")
   base_name <- tools::file_path_sans_ext(basename(edf_path))
   filter_and_load_edf(filtered_dir, edf_path, base_name)
+
+  result <- data.table(
+    bach_id = base_name
+  )
+
+  ## Compute threshold with N2 and N3 combined
+  leval("MASK ifnot=N2,N3 & RE")
+  result$psd <- leval("PSD spectrum")
+  result$spindles <- leval(
+    "SPINDLES fc=11,15 empirical set-empirical median"
+  )
+  lrefresh()
+  result
 }
 
 filter_and_load_edf <- function(filtered_dir, edf_path, base_name) {
