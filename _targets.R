@@ -6,8 +6,7 @@ library(crew)
 dotenv::load_dot_env()
 edf_dir <- Sys.getenv("EDF_DIR")
 data_dir <- Sys.getenv("DATA_DIR")
-ncpus <- 3
-# ncpus <- future::availableCores() - 1
+ncpus <- future::availableCores() - 1
 
 # Ensure single threaded within targets
 Sys.setenv(R_DATATABLE_NUM_THREADS = 1)
