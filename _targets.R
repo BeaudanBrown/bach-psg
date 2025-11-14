@@ -98,7 +98,6 @@ list(
     tar_target(
       stage_threshold_results,
       get_stage_spindles_with_threshold(
-        file.path(edf_dir, "filtered"),
         edf_files,
         threshold,
         sleep_stage = mask

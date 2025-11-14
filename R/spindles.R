@@ -60,7 +60,6 @@ get_empirical_threshold <- function(
 }
 
 get_stage_spindles_with_threshold <- function(
-  filtered_dir,
   edf_path,
   threshold,
   sleep_stage
@@ -69,7 +68,7 @@ get_stage_spindles_with_threshold <- function(
   result <- data.table(
     bach_id = base_name
   )
-
+  filtered_dir <- file.path(dirname(edf_path), "filtered")
   filter_and_load_edf(filtered_dir, edf_path, base_name)
 
   leval(paste0("MASK ifnot=", sleep_stage, " & RE"))
