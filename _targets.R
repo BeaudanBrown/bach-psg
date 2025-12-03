@@ -170,6 +170,28 @@ list(
       significant_model_results,
       model_summary[`Pr(>|t|)` < .05, ]
     )
+  ),
+  tar_target(
+    psd_dt,
+    {
+      stages <- list(
+        N2 = stage_threshold_results_N2$psd,
+        N3 = stage_threshold_results_N3$psd
+      )
+      rbindlist(
+        lapply(names(stages), function(stage_name) {
+          results <- lapply(stages[[stage_name]], function(ppt_data) {
+            if (is.null(ppt_data) || is.null(ppt_data$B_CH)) {
+              return(NULL)
+            }
+            ppt_data$B_CH$stage <- stage_name
+            ppt_data$B_CH
+          })
+          rbindlist(Filter(Negate(is.null), results))
+        })
+      )
+
+    }
   )
 )
 # combined sig model results into one data.table
