@@ -35,7 +35,7 @@ list(
   tar_files(
     edf_files,
     {
-      edfs <- list.files(edf_dir, pattern = "\\.edf$", full.names = TRUE)
+      edfs <- list.files(edf_dir, pattern = "BACH\\d{4}\\.edf$", full.names = TRUE)
       edfs[file.exists(paste0(edfs, ".XML"))]
     }
   ),
