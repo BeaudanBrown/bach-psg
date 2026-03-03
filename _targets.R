@@ -81,14 +81,14 @@ list(
   tar_target(
     qc_epoch_dt,
     rbindlist(
-      Filter(Negate(is.null), raw_qc_epoch),
+      collect_tables(raw_qc_epoch),
       fill = TRUE
     )
   ),
   tar_target(
     qc_channel_dt,
     rbindlist(
-      Filter(Negate(is.null), raw_qc_channel),
+      collect_tables(raw_qc_channel),
       fill = TRUE
     )
   ),
@@ -127,14 +127,14 @@ list(
   tar_target(
     line_noise_summary,
     rbindlist(
-      Filter(Negate(is.null), line_noise_summary_branch),
+      collect_tables(line_noise_summary_branch),
       fill = TRUE
     )
   ),
   tar_target(
     line_noise_spectra,
     rbindlist(
-      Filter(Negate(is.null), line_noise_spectra_branch),
+      collect_tables(line_noise_spectra_branch),
       fill = TRUE
     )
   ),
