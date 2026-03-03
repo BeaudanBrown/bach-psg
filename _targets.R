@@ -69,16 +69,26 @@ list(
     pattern = map(edf_files)
   ),
   tar_target(
+    raw_qc_epoch,
+    raw_qc$epoch_qc,
+    pattern = map(raw_qc)
+  ),
+  tar_target(
+    raw_qc_channel,
+    raw_qc$channel_qc,
+    pattern = map(raw_qc)
+  ),
+  tar_target(
     qc_epoch_dt,
     rbindlist(
-      Filter(Negate(is.null), lapply(raw_qc, function(x) x$epoch_qc)),
+      Filter(Negate(is.null), raw_qc_epoch),
       fill = TRUE
     )
   ),
   tar_target(
     qc_channel_dt,
     rbindlist(
-      Filter(Negate(is.null), lapply(raw_qc, function(x) x$channel_qc)),
+      Filter(Negate(is.null), raw_qc_channel),
       fill = TRUE
     )
   ),
@@ -105,16 +115,26 @@ list(
     pattern = map(edf_files)
   ),
   tar_target(
+    line_noise_summary_branch,
+    line_noise_review$summary,
+    pattern = map(line_noise_review)
+  ),
+  tar_target(
+    line_noise_spectra_branch,
+    line_noise_review$spectra,
+    pattern = map(line_noise_review)
+  ),
+  tar_target(
     line_noise_summary,
     rbindlist(
-      Filter(Negate(is.null), lapply(line_noise_review, function(x) x$summary)),
+      Filter(Negate(is.null), line_noise_summary_branch),
       fill = TRUE
     )
   ),
   tar_target(
     line_noise_spectra,
     rbindlist(
-      Filter(Negate(is.null), lapply(line_noise_review, function(x) x$spectra)),
+      Filter(Negate(is.null), line_noise_spectra_branch),
       fill = TRUE
     )
   ),
