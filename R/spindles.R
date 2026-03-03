@@ -170,19 +170,21 @@ get_raw_qc_data <- function(edf_path) {
     cols = c("E", "E1", "HMS", "START", "STOP", "MID", "INTERVAL", "TP")
   )
   hypno_epochs <- extract_luna_table(
-    leval("HYPNO"),
+    leval("HYPNO epoch"),
     "E",
     cols = c(
       "E",
-      "CLOCK_TIME",
-      "CLOCK_HOURS",
-      "START_SEC",
-      "STAGE",
-      "STAGE_N",
       "OSTAGE",
       "WASO",
-      "PERSISTENT_SLEEP"
+      "PERSISTENT_SLEEP",
+      "CLOCK_HOURS",
+      "START_SEC"
     )
+  )
+  stage_epochs <- extract_luna_table(
+    leval("STAGE"),
+    "E",
+    cols = c("E", "CLOCK_TIME", "MINS", "STAGE", "STAGE_N")
   )
   artifacts <- leval("ARTIFACTS verbose")
   artifact_epochs <- extract_luna_table(
@@ -287,6 +289,7 @@ get_raw_qc_data <- function(edf_path) {
   epoch_base <- merge_dt_list(
     list(
       epoch_info,
+      stage_epochs,
       hypno_epochs
     ),
     by = "E"
