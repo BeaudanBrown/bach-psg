@@ -282,6 +282,15 @@ list(
     summarize_spindle_qc(raw_spindle_qc_dt)
   ),
   tar_target(
+    qc_overview,
+    build_qc_overview(
+      qc_summary,
+      raw_spindle_qc_summary,
+      edge_epoch_review,
+      line_noise_summary
+    )
+  ),
+  tar_target(
     psd_dt,
     {
       stages <- list(
