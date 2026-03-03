@@ -259,21 +259,21 @@ list(
   tar_target(
     cleaned_spindle_epoch_dt,
     rbindlist(
-      c(cleaned_spindle_epochs_N2, cleaned_spindle_epochs_N3),
+      collect_tables(list(cleaned_spindle_epochs_N2, cleaned_spindle_epochs_N3)),
       fill = TRUE
     )
   ),
   tar_target(
     raw_spindle_epoch_dt,
     rbindlist(
-      c(raw_spindle_epochs_N2, raw_spindle_epochs_N3),
+      collect_tables(list(raw_spindle_epochs_N2, raw_spindle_epochs_N3)),
       fill = TRUE
     )
   ),
   tar_target(
     raw_spindle_qc_dt,
     rbindlist(
-      c(raw_spindle_qc_N2, raw_spindle_qc_N3),
+      collect_tables(list(raw_spindle_qc_N2, raw_spindle_qc_N3)),
       fill = TRUE
     )
   ),

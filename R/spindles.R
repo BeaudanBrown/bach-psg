@@ -63,6 +63,22 @@ coalesce_zero <- function(x) {
   y
 }
 
+collect_tables <- function(x) {
+  if (is.null(x)) {
+    return(list())
+  }
+
+  if (is.data.table(x) || is.data.frame(x)) {
+    return(list(as.data.table(x)))
+  }
+
+  if (is.list(x)) {
+    return(unlist(lapply(x, collect_tables), recursive = FALSE))
+  }
+
+  list()
+}
+
 process_edf <- function(edf_path) {
   base_name <- tools::file_path_sans_ext(basename(edf_path))
   load_filtered_edf(edf_path)
