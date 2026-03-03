@@ -12,3 +12,6 @@ push-m3-edfs:
 
 push-m3:
     rsync -avrz --progress ./_targets/ m3:bc41_scratch2/Spindles/_targets/
+
+push-rack-edfs:
+    rsync -avrz --progress /s/Epi-Dementia/Pase-ED/Studies/BACH_Sleep/edfs/Displayedsignals_inclFiltering/ bottom:documents/Spindles/edfs/

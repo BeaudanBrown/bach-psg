@@ -49,6 +49,15 @@ merge_dt_list <- function(dt_list, by) {
   Reduce(function(x, y) merge(x, y, by = by, all = TRUE), non_empty)
 }
 
+ensure_dt_cols <- function(x, cols) {
+  dt <- as.data.table(x)
+  missing <- setdiff(cols, names(dt))
+  if (length(missing)) {
+    dt[, (missing) := NA]
+  }
+  dt[, cols, with = FALSE]
+}
+
 process_edf <- function(edf_path) {
   base_name <- tools::file_path_sans_ext(basename(edf_path))
   load_filtered_edf(edf_path)
@@ -376,13 +385,33 @@ extract_spindle_epoch_counts <- function(stage_threshold_results, sleep_stage) {
     setcolorder(spindle_epochs, c("bach_id", "sleep_stage", "CH", "E", "raw_epoch", "F", "N"))
   }
 
-  spindle_epochs
+  ensure_dt_cols(
+    spindle_epochs,
+    c(
+      "bach_id",
+      "sleep_stage",
+      "CH",
+      "E",
+      "raw_epoch",
+      "F",
+      "N",
+      "START",
+      "STOP",
+      "MID"
+    )
+  )
 }
 
 summarize_epoch_qc <- function(epoch_qc) {
-  dt <- copy(as.data.table(epoch_qc))
+  dt <- ensure_dt_cols(
+    copy(as.data.table(epoch_qc)),
+    c("bach_id", "E", "CH", "STAGE", "EMASK", "MASK", "CHEP", "BETA_MASK", "DELTA_MASK")
+  )
   if (!nrow(dt)) {
-    return(data.table())
+    return(ensure_dt_cols(data.table(), c(
+      "bach_id", "STAGE", "CH", "n_rows", "n_epochs", "n_masked_epochs",
+      "pct_masked_epochs", "n_noisy_rows", "pct_noisy_rows", "n_chep_rows", "n_artifact_rows"
+    )))
   }
 
   dt[, noisy_epoch := fifelse(
@@ -408,9 +437,15 @@ summarize_epoch_qc <- function(epoch_qc) {
 }
 
 get_edge_epoch_review <- function(epoch_qc, n_edge_epochs = 10) {
-  dt <- copy(as.data.table(epoch_qc))
+  dt <- ensure_dt_cols(
+    copy(as.data.table(epoch_qc)),
+    c("bach_id", "E", "STAGE", "EMASK", "CHEP_CHANNELS_MASKED", "START", "STOP", "HMS")
+  )
   if (!nrow(dt)) {
-    return(data.table())
+    return(ensure_dt_cols(data.table(), c(
+      "bach_id", "E", "STAGE", "EMASK", "CHEP_CHANNELS_MASKED", "START",
+      "STOP", "HMS", "epoch_order", "total_epochs", "edge_region"
+    )))
   }
 
   epoch_dt <- unique(
@@ -471,26 +506,49 @@ get_line_noise_review <- function(edf_path) {
 }
 
 compare_spindles_by_qc <- function(spindle_epochs, epoch_qc) {
-  spindles <- copy(as.data.table(spindle_epochs))
+  spindles <- ensure_dt_cols(
+    copy(as.data.table(spindle_epochs)),
+    c("bach_id", "sleep_stage", "CH", "E", "raw_epoch", "F", "N", "START", "STOP", "MID")
+  )
+  if (!nrow(spindles)) {
+    return(ensure_dt_cols(data.table(), c(
+      "bach_id", "raw_epoch", "CH", "sleep_stage", "E", "F", "N", "START",
+      "STOP", "MID", "STAGE", "EMASK", "MASK", "CHEP", "BETA_MASK",
+      "DELTA_MASK", "CHEP_CHANNELS_MASKED", "noisy_epoch"
+    )))
+  }
+
   qc <- unique(
-    as.data.table(epoch_qc)[,
-      .(
-        bach_id,
-        raw_epoch = E,
-        CH,
-        STAGE,
-        EMASK,
-        MASK,
-        CHEP,
-        BETA_MASK,
-        DELTA_MASK,
-        CHEP_CHANNELS_MASKED
+    ensure_dt_cols(
+      as.data.table(epoch_qc),
+      c(
+        "bach_id",
+        "E",
+        "CH",
+        "STAGE",
+        "EMASK",
+        "MASK",
+        "CHEP",
+        "BETA_MASK",
+        "DELTA_MASK",
+        "CHEP_CHANNELS_MASKED"
       )
-    ]
+    )[, `:=`(raw_epoch = E, qc_epoch = E)][, E := NULL][]
   )
 
-  if (!nrow(spindles) || !nrow(qc)) {
-    return(data.table())
+  if (!nrow(qc)) {
+    out <- copy(spindles)
+    out[, `:=`(
+      STAGE = NA_character_,
+      EMASK = NA,
+      MASK = NA,
+      CHEP = NA,
+      BETA_MASK = NA,
+      DELTA_MASK = NA,
+      CHEP_CHANNELS_MASKED = NA,
+      noisy_epoch = NA
+    )]
+    return(out)
   }
 
   out <- merge(spindles, qc, by = c("bach_id", "raw_epoch", "CH"), all.x = TRUE)
@@ -507,9 +565,15 @@ compare_spindles_by_qc <- function(spindle_epochs, epoch_qc) {
 }
 
 summarize_spindle_qc <- function(spindle_qc) {
-  dt <- copy(as.data.table(spindle_qc))
+  dt <- ensure_dt_cols(
+    copy(as.data.table(spindle_qc)),
+    c("sleep_stage", "CH", "F", "N", "noisy_epoch")
+  )
   if (!nrow(dt)) {
-    return(data.table())
+    return(ensure_dt_cols(data.table(), c(
+      "sleep_stage", "CH", "F", "noisy_epoch", "n_epochs",
+      "mean_spindles", "median_spindles", "pct_zero_spindles"
+    )))
   }
 
   dt[, .(
