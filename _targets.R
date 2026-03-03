@@ -61,6 +61,64 @@ list(
     median(per_ppt_thresholds, na.rm = TRUE)
   ),
   ##########################
+  # QC pipeline on raw EDFs
+  ##########################
+  tar_target(
+    raw_qc,
+    get_raw_qc_data(edf_files),
+    pattern = map(edf_files)
+  ),
+  tar_target(
+    qc_epoch_dt,
+    rbindlist(
+      Filter(Negate(is.null), lapply(raw_qc, function(x) x$epoch_qc)),
+      fill = TRUE
+    )
+  ),
+  tar_target(
+    qc_channel_dt,
+    rbindlist(
+      Filter(Negate(is.null), lapply(raw_qc, function(x) x$channel_qc)),
+      fill = TRUE
+    )
+  ),
+  tar_target(
+    qc_summary,
+    summarize_epoch_qc(qc_epoch_dt)
+  ),
+  # Manual review target:
+  # inspect leading/trailing epochs before adding explicit edge trimming.
+  # If exclusions cluster at the start or end of the night, decide whether
+  # you want a fixed edge-trim rule in preprocessing.
+  tar_target(
+    edge_epoch_review,
+    get_edge_epoch_review(qc_epoch_dt)
+  ),
+  # Manual review target:
+  # inspect spectra for sharp 50 Hz peaks or harmonics before enabling any
+  # denoising step by default. This Luna build exposes PSD review cleanly,
+  # but line-denoising itself should only be integrated after confirming
+  # mains contamination is material in your recordings.
+  tar_target(
+    line_noise_review,
+    get_line_noise_review(edf_files),
+    pattern = map(edf_files)
+  ),
+  tar_target(
+    line_noise_summary,
+    rbindlist(
+      Filter(Negate(is.null), lapply(line_noise_review, function(x) x$summary)),
+      fill = TRUE
+    )
+  ),
+  tar_target(
+    line_noise_spectra,
+    rbindlist(
+      Filter(Negate(is.null), lapply(line_noise_review, function(x) x$spectra)),
+      fill = TRUE
+    )
+  ),
+  ##########################
   # Branching constants
   ##########################
   tar_target(
@@ -103,6 +161,18 @@ list(
       ),
       pattern = map(edf_files)
     ),
+    # QC/sensitivity branch:
+    # run stage-restricted spindle detection on the raw EDF without
+    # restructuring so noisy-versus-clean epochs can be compared.
+    tar_target(
+      raw_stage_threshold_results,
+      get_raw_stage_spindles_with_threshold(
+        edf_files,
+        threshold,
+        sleep_stage = mask
+      ),
+      pattern = map(edf_files)
+    ),
     # tar_target(
     #   stage_threshold_results,
     #   get_stage_spindles_with_threshold(
@@ -120,6 +190,21 @@ list(
       filtered_results,
       filter_spindles_so(stage_threshold_results),
       pattern = map(stage_threshold_results)
+    ),
+    tar_target(
+      cleaned_spindle_epochs,
+      extract_spindle_epoch_counts(stage_threshold_results, sleep_stage = mask),
+      pattern = map(stage_threshold_results)
+    ),
+    tar_target(
+      raw_spindle_epochs,
+      extract_spindle_epoch_counts(raw_stage_threshold_results, sleep_stage = mask),
+      pattern = map(raw_stage_threshold_results)
+    ),
+    tar_target(
+      raw_spindle_qc,
+      compare_spindles_by_qc(raw_spindle_epochs, qc_epoch_dt),
+      pattern = map(raw_spindle_epochs)
     ),
     # Filter coupl_angle based on coupl_mag_emp
     tar_target(
@@ -170,6 +255,31 @@ list(
       significant_model_results,
       model_summary[`Pr(>|t|)` < .05, ]
     )
+  ),
+  tar_target(
+    cleaned_spindle_epoch_dt,
+    rbindlist(
+      c(cleaned_spindle_epochs_N2, cleaned_spindle_epochs_N3),
+      fill = TRUE
+    )
+  ),
+  tar_target(
+    raw_spindle_epoch_dt,
+    rbindlist(
+      c(raw_spindle_epochs_N2, raw_spindle_epochs_N3),
+      fill = TRUE
+    )
+  ),
+  tar_target(
+    raw_spindle_qc_dt,
+    rbindlist(
+      c(raw_spindle_qc_N2, raw_spindle_qc_N3),
+      fill = TRUE
+    )
+  ),
+  tar_target(
+    raw_spindle_qc_summary,
+    summarize_spindle_qc(raw_spindle_qc_dt)
   ),
   tar_target(
     psd_dt,

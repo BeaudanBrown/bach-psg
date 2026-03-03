@@ -2,13 +2,56 @@ library(luna)
 library(data.table)
 library(dplyr)
 
-process_edf <- function(edf_path) {
-  filtered_dir <- file.path(dirname(edf_path), "filtered")
-  base_name <- tools::file_path_sans_ext(basename(edf_path))
-  if (!dir.exists(filtered_dir)) {
-    dir.create(filtered_dir)
+extract_luna_table <- function(result, table_name, cols = NULL) {
+  if (length(result) == 0 || is.null(result[[1]]) || is.null(result[[1]][[table_name]])) {
+    dt <- data.table()
+  } else {
+    dt <- as.data.table(result[[1]][[table_name]])
   }
-  filter_and_load_edf(filtered_dir, edf_path, base_name)
+
+  if (!is.null(cols)) {
+    missing <- setdiff(cols, names(dt))
+    if (length(missing)) {
+      dt[, (missing) := NA]
+    }
+    dt <- dt[, cols, with = FALSE]
+  }
+
+  dt
+}
+
+`%||%` <- function(x, y) {
+  if (is.null(x)) {
+    y
+  } else {
+    x
+  }
+}
+
+extract_first_available_table <- function(result, table_names, cols = NULL) {
+  result_names <- names(result[[1]] %||% list())
+  for (table_name in table_names) {
+    dt <- extract_luna_table(result, table_name, cols = cols)
+    if (nrow(dt) > 0 || table_name %in% result_names) {
+      return(dt)
+    }
+  }
+
+  data.table()
+}
+
+merge_dt_list <- function(dt_list, by) {
+  non_empty <- Filter(function(x) nrow(x) > 0, dt_list)
+  if (!length(non_empty)) {
+    return(data.table())
+  }
+
+  Reduce(function(x, y) merge(x, y, by = by, all = TRUE), non_empty)
+}
+
+process_edf <- function(edf_path) {
+  base_name <- tools::file_path_sans_ext(basename(edf_path))
+  load_filtered_edf(edf_path)
 
   result <- data.table(
     bach_id = base_name
@@ -24,9 +67,15 @@ process_edf <- function(edf_path) {
   result
 }
 
-filter_and_load_edf <- function(filtered_dir, edf_path, base_name) {
+ensure_filtered_edf <- function(edf_path) {
+  filtered_dir <- file.path(dirname(edf_path), "filtered")
+  base_name <- tools::file_path_sans_ext(basename(edf_path))
   xml_path <- paste0(edf_path, ".XML")
   filtered_path <- file.path(filtered_dir, paste0(base_name, ".edf"))
+
+  if (!dir.exists(filtered_dir)) {
+    dir.create(filtered_dir)
+  }
 
   if (!file.exists(filtered_path)) {
     ledf(edf_path, base_name, xml_path)
@@ -46,7 +95,194 @@ filter_and_load_edf <- function(filtered_dir, edf_path, base_name) {
     ))
   }
 
+  filtered_path
+}
+
+load_filtered_edf <- function(edf_path) {
+  base_name <- tools::file_path_sans_ext(basename(edf_path))
+  xml_path <- paste0(edf_path, ".XML")
+  filtered_path <- ensure_filtered_edf(edf_path)
+
   ledf(filtered_path, base_name, xml_path)
+}
+
+get_raw_qc_data <- function(edf_path) {
+  base_name <- tools::file_path_sans_ext(basename(edf_path))
+  xml_path <- paste0(edf_path, ".XML")
+
+  ledf(edf_path, base_name, xml_path)
+  leval("EPOCH")
+
+  epoch_info <- extract_luna_table(
+    leval("EPOCH verbose"),
+    "E",
+    cols = c("E", "E1", "HMS", "START", "STOP", "MID", "INTERVAL", "TP")
+  )
+  hypno_epochs <- extract_luna_table(
+    leval("HYPNO"),
+    "E",
+    cols = c(
+      "E",
+      "CLOCK_TIME",
+      "CLOCK_HOURS",
+      "START_SEC",
+      "STAGE",
+      "STAGE_N",
+      "OSTAGE",
+      "WASO",
+      "PERSISTENT_SLEEP"
+    )
+  )
+  artifacts <- leval("ARTIFACTS verbose")
+  artifact_epochs <- extract_luna_table(
+    artifacts,
+    "CH_E",
+    cols = c(
+      "CH",
+      "E",
+      "BETA",
+      "BETA_AVG",
+      "BETA_FAC",
+      "BETA_MASK",
+      "DELTA",
+      "DELTA_AVG",
+      "DELTA_FAC",
+      "DELTA_MASK",
+      "MASK"
+    )
+  )
+  artifact_channels <- extract_luna_table(
+    artifacts,
+    "CH",
+    cols = c("CH", "ALTERED_EPOCHS", "FLAGGED_EPOCHS", "TOTAL_EPOCHS")
+  )
+  if (nrow(artifact_channels)) {
+    setnames(
+      artifact_channels,
+      c("ALTERED_EPOCHS", "FLAGGED_EPOCHS", "TOTAL_EPOCHS"),
+      c(
+        "artifact_altered_epochs",
+        "artifact_flagged_epochs",
+        "artifact_total_epochs"
+      ),
+      skip_absent = TRUE
+    )
+  }
+  sigstats <- leval("SIGSTATS epoch")
+  sigstats_epochs <- extract_luna_table(
+    sigstats,
+    "CH_E",
+    cols = c("CH", "E", "H1", "H2", "H3")
+  )
+  sigstats_channels <- extract_luna_table(
+    sigstats,
+    "CH",
+    cols = c(
+      "CH",
+      "ALTERED_EPOCHS",
+      "CNT_ACT",
+      "CNT_CLP",
+      "CNT_CMP",
+      "CNT_MOB",
+      "CNT_RMS",
+      "FLAGGED_EPOCHS",
+      "TOTAL_EPOCHS",
+      "P_H1",
+      "P_H2",
+      "P_H3",
+      "P_OUT"
+    )
+  )
+  if (nrow(sigstats_channels)) {
+    setnames(
+      sigstats_channels,
+      c("ALTERED_EPOCHS", "FLAGGED_EPOCHS", "TOTAL_EPOCHS"),
+      c(
+        "sigstats_altered_epochs",
+        "sigstats_flagged_epochs",
+        "sigstats_total_epochs"
+      ),
+      skip_absent = TRUE
+    )
+  }
+
+  leval("CHEP-MASK ep-th=3,3,3")
+  chep_dump <- leval("CHEP dump")
+  chep_epochs <- extract_luna_table(
+    chep_dump,
+    "CH_E",
+    cols = c("CH", "E", "CHEP")
+  )
+  chep_epoch_summary <- extract_luna_table(
+    chep_dump,
+    "E",
+    cols = c("E", "CHEP")
+  )
+  chep_channels <- extract_luna_table(
+    chep_dump,
+    "CH",
+    cols = c("CH", "CHEP")
+  )
+
+  leval("CHEP epoch")
+  epoch_mask <- extract_luna_table(
+    leval("DUMP-MASK"),
+    "E",
+    cols = c("E", "EMASK")
+  )
+
+  lrefresh()
+
+  epoch_level <- merge_dt_list(
+    list(
+      artifact_epochs,
+      sigstats_epochs,
+      chep_epochs
+    ),
+    by = c("CH", "E")
+  )
+
+  epoch_level <- merge_dt_list(
+    list(
+      epoch_level,
+      epoch_info,
+      hypno_epochs
+    ),
+    by = "E"
+  )
+
+  if (nrow(chep_epoch_summary)) {
+    setnames(chep_epoch_summary, "CHEP", "CHEP_CHANNELS_MASKED")
+    epoch_level <- merge(epoch_level, chep_epoch_summary, by = "E", all = TRUE)
+  }
+
+  if (nrow(epoch_mask)) {
+    epoch_level <- merge(epoch_level, epoch_mask, by = "E", all = TRUE)
+  }
+
+  if (nrow(epoch_level)) {
+    epoch_level[, bach_id := base_name]
+    setcolorder(epoch_level, c("bach_id", "E", "CH"))
+  }
+
+  channel_level <- merge_dt_list(
+    list(
+      artifact_channels,
+      sigstats_channels,
+      chep_channels
+    ),
+    by = "CH"
+  )
+
+  if (nrow(channel_level)) {
+    channel_level[, bach_id := base_name]
+    setcolorder(channel_level, c("bach_id", "CH"))
+  }
+
+  list(
+    epoch_qc = epoch_level,
+    channel_qc = channel_level
+  )
 }
 
 get_empirical_threshold <- function(
@@ -68,20 +304,220 @@ get_stage_spindles_with_threshold <- function(
   result <- data.table(
     bach_id = base_name
   )
-  filtered_dir <- file.path(dirname(edf_path), "filtered")
-  filter_and_load_edf(filtered_dir, edf_path, base_name)
+  load_filtered_edf(edf_path)
 
   leval(paste0("MASK ifnot=", sleep_stage, " & RE"))
   result$psd <- leval("PSD spectrum")
+  result$epoch_map <- leval("EPOCH verbose")
   result$spindles <- leval(
     paste0(
       "SPINDLES fc=11,15 sig=C3_M2,C4_M1,F3_M2,F4_M1 th=",
       threshold,
-      " so f-lwr=0.3 f-upr=4 t-neg-lwr=0.3 t-neg-upr=1.5 t-pos-lwr=0 t-pos-upr=1.0 uV-neg=-40 uV-p2p=75 nreps=100000"
+      " epoch so f-lwr=0.3 f-upr=4 t-neg-lwr=0.3 t-neg-upr=1.5 t-pos-lwr=0 t-pos-upr=1.0 uV-neg=-40 uV-p2p=75 nreps=100000"
     )
   )
   lrefresh()
   result
+}
+
+get_raw_stage_spindles_with_threshold <- function(
+  edf_path,
+  threshold,
+  sleep_stage
+) {
+  base_name <- tools::file_path_sans_ext(basename(edf_path))
+  xml_path <- paste0(edf_path, ".XML")
+
+  ledf(edf_path, base_name, xml_path)
+  leval("EPOCH & SIGNALS keep=${eeg}")
+  result <- data.table(
+    bach_id = base_name
+  )
+
+  leval(paste0("MASK ifnot=", sleep_stage))
+  result$epoch_map <- leval("EPOCH verbose")
+  result$spindles <- leval(
+    paste0(
+      "SPINDLES fc=11,15 sig=C3_M2,C4_M1,F3_M2,F4_M1 th=",
+      threshold,
+      " epoch so f-lwr=0.3 f-upr=4 t-neg-lwr=0.3 t-neg-upr=1.5 t-pos-lwr=0 t-pos-upr=1.0 uV-neg=-40 uV-p2p=75 nreps=100000"
+    )
+  )
+  lrefresh()
+  result
+}
+
+extract_spindle_epoch_counts <- function(stage_threshold_results, sleep_stage) {
+  epoch_map <- extract_luna_table(
+    stage_threshold_results$epoch_map,
+    "E",
+    cols = c("E", "E1", "START", "STOP", "MID")
+  )
+  spindle_epochs <- extract_luna_table(
+    stage_threshold_results$spindles,
+    "CH_E_F",
+    cols = c("CH", "E", "F", "N")
+  )
+
+  if (nrow(spindle_epochs) && nrow(epoch_map)) {
+    spindle_epochs <- merge(spindle_epochs, epoch_map, by = "E", all.x = TRUE)
+  }
+
+  if (nrow(spindle_epochs)) {
+    setnames(spindle_epochs, "E1", "raw_epoch", skip_absent = TRUE)
+    if (!"raw_epoch" %in% names(spindle_epochs)) {
+      spindle_epochs[, raw_epoch := E]
+    }
+    spindle_epochs[is.na(raw_epoch), raw_epoch := E]
+    spindle_epochs[, `:=`(
+      bach_id = stage_threshold_results$bach_id[[1]],
+      sleep_stage = sleep_stage
+    )]
+    setcolorder(spindle_epochs, c("bach_id", "sleep_stage", "CH", "E", "raw_epoch", "F", "N"))
+  }
+
+  spindle_epochs
+}
+
+summarize_epoch_qc <- function(epoch_qc) {
+  dt <- copy(as.data.table(epoch_qc))
+  if (!nrow(dt)) {
+    return(data.table())
+  }
+
+  dt[, noisy_epoch := fifelse(
+    coalesce(EMASK, 0) == 1 |
+      coalesce(MASK, 0) == 1 |
+      coalesce(CHEP, 0) == 1 |
+      coalesce(BETA_MASK, 0) == 1 |
+      coalesce(DELTA_MASK, 0) == 1,
+    TRUE,
+    FALSE
+  )]
+
+  dt[, .(
+    n_rows = .N,
+    n_epochs = uniqueN(E),
+    n_masked_epochs = uniqueN(E[coalesce(EMASK, 0) == 1]),
+    pct_masked_epochs = uniqueN(E[coalesce(EMASK, 0) == 1]) / uniqueN(E),
+    n_noisy_rows = sum(noisy_epoch, na.rm = TRUE),
+    pct_noisy_rows = mean(noisy_epoch, na.rm = TRUE),
+    n_chep_rows = sum(coalesce(CHEP, 0) == 1, na.rm = TRUE),
+    n_artifact_rows = sum(coalesce(MASK, 0) == 1, na.rm = TRUE)
+  ), by = .(bach_id, STAGE, CH)]
+}
+
+get_edge_epoch_review <- function(epoch_qc, n_edge_epochs = 10) {
+  dt <- copy(as.data.table(epoch_qc))
+  if (!nrow(dt)) {
+    return(data.table())
+  }
+
+  epoch_dt <- unique(
+    dt[, .(
+      bach_id,
+      E,
+      STAGE,
+      EMASK,
+      CHEP_CHANNELS_MASKED,
+      START,
+      STOP,
+      HMS
+    )]
+  )
+
+  setorder(epoch_dt, bach_id, E)
+  epoch_dt[, epoch_order := seq_len(.N), by = bach_id]
+  epoch_dt[, total_epochs := .N, by = bach_id]
+  epoch_dt[
+    epoch_order <= n_edge_epochs | epoch_order > (total_epochs - n_edge_epochs),
+    edge_region := fifelse(epoch_order <= n_edge_epochs, "leading", "trailing")
+  ]
+}
+
+get_line_noise_review <- function(edf_path) {
+  base_name <- tools::file_path_sans_ext(basename(edf_path))
+  xml_path <- paste0(edf_path, ".XML")
+
+  ledf(edf_path, base_name, xml_path)
+  leval("EPOCH & SIGNALS keep=${eeg}")
+  psd <- leval("PSD spectrum peaks max=60")
+  lrefresh()
+
+  summary_dt <- extract_luna_table(
+    psd,
+    "CH",
+    cols = c("CH", "KURT", "NE", "SPEC_SLOPE", "SPEC_SLOPE_MD", "SPEC_SLOPE_MN", "SPEC_SLOPE_SD", "SPK")
+  )
+  band_dt <- extract_first_available_table(
+    psd,
+    table_names = c("B_CH", "CH_F"),
+    cols = NULL
+  )
+
+  if (nrow(summary_dt)) {
+    summary_dt[, bach_id := base_name]
+    setcolorder(summary_dt, c("bach_id", "CH"))
+  }
+
+  if (nrow(band_dt)) {
+    band_dt[, bach_id := base_name]
+  }
+
+  list(
+    summary = summary_dt,
+    spectra = band_dt
+  )
+}
+
+compare_spindles_by_qc <- function(spindle_epochs, epoch_qc) {
+  spindles <- copy(as.data.table(spindle_epochs))
+  qc <- unique(
+    as.data.table(epoch_qc)[,
+      .(
+        bach_id,
+        raw_epoch = E,
+        CH,
+        STAGE,
+        EMASK,
+        MASK,
+        CHEP,
+        BETA_MASK,
+        DELTA_MASK,
+        CHEP_CHANNELS_MASKED
+      )
+    ]
+  )
+
+  if (!nrow(spindles) || !nrow(qc)) {
+    return(data.table())
+  }
+
+  out <- merge(spindles, qc, by = c("bach_id", "raw_epoch", "CH"), all.x = TRUE)
+  out[, noisy_epoch := fifelse(
+    coalesce(EMASK, 0) == 1 |
+      coalesce(MASK, 0) == 1 |
+      coalesce(CHEP, 0) == 1 |
+      coalesce(BETA_MASK, 0) == 1 |
+      coalesce(DELTA_MASK, 0) == 1,
+    TRUE,
+    FALSE
+  )]
+  out
+}
+
+summarize_spindle_qc <- function(spindle_qc) {
+  dt <- copy(as.data.table(spindle_qc))
+  if (!nrow(dt)) {
+    return(data.table())
+  }
+
+  dt[, .(
+    n_epochs = .N,
+    mean_spindles = mean(N, na.rm = TRUE),
+    median_spindles = median(N, na.rm = TRUE),
+    pct_zero_spindles = mean(N == 0, na.rm = TRUE)
+  ), by = .(sleep_stage, CH, F, noisy_epoch)]
 }
 
 filter_spindles_so <- function(threshold_results) {
