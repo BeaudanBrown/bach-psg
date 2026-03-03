@@ -1,6 +1,5 @@
 library(luna)
 library(data.table)
-library(dplyr)
 
 extract_luna_table <- function(result, table_name, cols = NULL) {
   if (length(result) == 0 || is.null(result[[1]]) || is.null(result[[1]][[table_name]])) {
@@ -56,6 +55,12 @@ ensure_dt_cols <- function(x, cols) {
     dt[, (missing) := NA]
   }
   dt[, cols, with = FALSE]
+}
+
+coalesce_zero <- function(x) {
+  y <- copy(x)
+  y[is.na(y)] <- 0
+  y
 }
 
 process_edf <- function(edf_path) {
@@ -415,11 +420,11 @@ summarize_epoch_qc <- function(epoch_qc) {
   }
 
   dt[, noisy_epoch := fifelse(
-    coalesce(EMASK, 0) == 1 |
-      coalesce(MASK, 0) == 1 |
-      coalesce(CHEP, 0) == 1 |
-      coalesce(BETA_MASK, 0) == 1 |
-      coalesce(DELTA_MASK, 0) == 1,
+    coalesce_zero(EMASK) == 1 |
+      coalesce_zero(MASK) == 1 |
+      coalesce_zero(CHEP) == 1 |
+      coalesce_zero(BETA_MASK) == 1 |
+      coalesce_zero(DELTA_MASK) == 1,
     TRUE,
     FALSE
   )]
@@ -427,12 +432,12 @@ summarize_epoch_qc <- function(epoch_qc) {
   dt[, .(
     n_rows = .N,
     n_epochs = uniqueN(E),
-    n_masked_epochs = uniqueN(E[coalesce(EMASK, 0) == 1]),
-    pct_masked_epochs = uniqueN(E[coalesce(EMASK, 0) == 1]) / uniqueN(E),
+    n_masked_epochs = uniqueN(E[coalesce_zero(EMASK) == 1]),
+    pct_masked_epochs = uniqueN(E[coalesce_zero(EMASK) == 1]) / uniqueN(E),
     n_noisy_rows = sum(noisy_epoch, na.rm = TRUE),
     pct_noisy_rows = mean(noisy_epoch, na.rm = TRUE),
-    n_chep_rows = sum(coalesce(CHEP, 0) == 1, na.rm = TRUE),
-    n_artifact_rows = sum(coalesce(MASK, 0) == 1, na.rm = TRUE)
+    n_chep_rows = sum(coalesce_zero(CHEP) == 1, na.rm = TRUE),
+    n_artifact_rows = sum(coalesce_zero(MASK) == 1, na.rm = TRUE)
   ), by = .(bach_id, STAGE, CH)]
 }
 
@@ -553,11 +558,11 @@ compare_spindles_by_qc <- function(spindle_epochs, epoch_qc) {
 
   out <- merge(spindles, qc, by = c("bach_id", "raw_epoch", "CH"), all.x = TRUE)
   out[, noisy_epoch := fifelse(
-    coalesce(EMASK, 0) == 1 |
-      coalesce(MASK, 0) == 1 |
-      coalesce(CHEP, 0) == 1 |
-      coalesce(BETA_MASK, 0) == 1 |
-      coalesce(DELTA_MASK, 0) == 1,
+    coalesce_zero(EMASK) == 1 |
+      coalesce_zero(MASK) == 1 |
+      coalesce_zero(CHEP) == 1 |
+      coalesce_zero(BETA_MASK) == 1 |
+      coalesce_zero(DELTA_MASK) == 1,
     TRUE,
     FALSE
   )]
