@@ -203,7 +203,7 @@ list(
     ),
     tar_target(
       raw_spindle_qc,
-      compare_spindles_by_qc(raw_spindle_epochs, qc_epoch_dt),
+      compare_spindles_by_qc(raw_spindle_epochs, qc_epoch_dt, sleep_stage = mask),
       pattern = map(raw_spindle_epochs)
     ),
     # Filter coupl_angle based on coupl_mag_emp

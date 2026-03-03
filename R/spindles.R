@@ -162,7 +162,7 @@ get_raw_qc_data <- function(edf_path) {
   xml_path <- paste0(edf_path, ".XML")
 
   ledf(edf_path, base_name, xml_path)
-  leval("EPOCH")
+  leval("EPOCH & SIGNALS keep=${eeg}")
 
   epoch_info <- extract_luna_table(
     leval("EPOCH verbose"),
@@ -284,23 +284,36 @@ get_raw_qc_data <- function(edf_path) {
 
   lrefresh()
 
-  epoch_level <- merge_dt_list(
+  epoch_base <- merge_dt_list(
     list(
-      artifact_epochs,
-      sigstats_epochs,
-      chep_epochs
-    ),
-    by = c("CH", "E")
-  )
-
-  epoch_level <- merge_dt_list(
-    list(
-      epoch_level,
       epoch_info,
       hypno_epochs
     ),
     by = "E"
   )
+
+  channel_ids <- unique(na.omit(c(
+    artifact_epochs$CH,
+    sigstats_epochs$CH,
+    chep_epochs$CH,
+    artifact_channels$CH,
+    sigstats_channels$CH,
+    chep_channels$CH
+  )))
+
+  if (nrow(epoch_base) && length(channel_ids)) {
+    epoch_level <- CJ(
+      CH = sort(channel_ids),
+      E = sort(unique(epoch_base$E)),
+      unique = TRUE
+    )
+    epoch_level <- merge(epoch_level, epoch_base, by = "E", all.x = TRUE)
+    epoch_level <- merge(epoch_level, artifact_epochs, by = c("CH", "E"), all.x = TRUE)
+    epoch_level <- merge(epoch_level, sigstats_epochs, by = c("CH", "E"), all.x = TRUE)
+    epoch_level <- merge(epoch_level, chep_epochs, by = c("CH", "E"), all.x = TRUE)
+  } else {
+    epoch_level <- data.table()
+  }
 
   if (nrow(chep_epoch_summary)) {
     setnames(chep_epoch_summary, "CHEP", "CHEP_CHANNELS_MASKED")
@@ -385,7 +398,6 @@ get_raw_stage_spindles_with_threshold <- function(
     bach_id = base_name
   )
 
-  leval(paste0("MASK ifnot=", sleep_stage))
   result$epoch_map <- leval("EPOCH verbose")
   result$spindles <- leval(
     paste0(
@@ -547,7 +559,7 @@ get_line_noise_review <- function(edf_path) {
   )
 }
 
-compare_spindles_by_qc <- function(spindle_epochs, epoch_qc) {
+compare_spindles_by_qc <- function(spindle_epochs, epoch_qc, sleep_stage = NULL) {
   spindles <- ensure_dt_cols(
     copy(as.data.table(spindle_epochs)),
     c("bach_id", "sleep_stage", "CH", "E", "raw_epoch", "F", "N", "START", "STOP", "MID")
@@ -578,19 +590,21 @@ compare_spindles_by_qc <- function(spindle_epochs, epoch_qc) {
     )[, `:=`(raw_epoch = E, qc_epoch = E)][, E := NULL][]
   )
 
+  if (!is.null(sleep_stage) && nrow(qc)) {
+    qc <- qc[STAGE == sleep_stage]
+  }
+
   if (!nrow(qc)) {
-    out <- copy(spindles)
-    out[, `:=`(
-      STAGE = NA_character_,
-      EMASK = NA,
-      MASK = NA,
-      CHEP = NA,
-      BETA_MASK = NA,
-      DELTA_MASK = NA,
-      CHEP_CHANNELS_MASKED = NA,
-      noisy_epoch = NA
-    )]
-    return(out)
+    return(ensure_dt_cols(data.table(), c(
+      "bach_id", "raw_epoch", "CH", "sleep_stage", "E", "F", "N", "START",
+      "STOP", "MID", "STAGE", "EMASK", "MASK", "CHEP", "BETA_MASK",
+      "DELTA_MASK", "CHEP_CHANNELS_MASKED", "qc_epoch", "noisy_epoch"
+    )))
+  }
+
+  spindles <- spindles[raw_epoch %in% qc$raw_epoch]
+  if (!is.null(sleep_stage) && nrow(spindles)) {
+    spindles[, sleep_stage := sleep_stage]
   }
 
   out <- merge(spindles, qc, by = c("bach_id", "raw_epoch", "CH"), all.x = TRUE)
