@@ -52,6 +52,9 @@ The pipeline expects:
   selected generated outputs.
 
 See [docs/development.md](./docs/development.md) for local workflow details.
+See [docs/artifact-verification.md](./docs/artifact-verification.md) for the
+separate verification workflow around Luna artifact masking versus explicit
+epoch exclusion.
 
 ## Data And Privacy
 

@@ -1,6 +1,30 @@
 library(luna)
 library(data.table)
 
+build_filtered_edf_command <- function(filtered_dir, base_name, include_artifact_re = FALSE) {
+  artifact_re <- if (include_artifact_re) {
+    " & RE"
+  } else {
+    ""
+  }
+
+  sprintf(
+    "EPOCH &
+    SIGNALS keep=${eeg} &
+    ARTIFACTS &
+    SIGSTATS &
+    CHEP-MASK ep-th=3,3,3 &
+    CHEP epoch &
+    DUMP-MASK annot=artifacts%s &
+    WRITE-ANNOTS file=%s/%s.annots &
+    WRITE edf-dir=%s",
+    artifact_re,
+    filtered_dir,
+    base_name,
+    filtered_dir
+  )
+}
+
 process_edf <- function(edf_path) {
   base_name <- tools::file_path_sans_ext(basename(edf_path))
   load_filtered_edf(edf_path)
@@ -30,20 +54,7 @@ ensure_filtered_edf <- function(edf_path) {
 
   if (!file.exists(filtered_path)) {
     ledf(edf_path, base_name, xml_path)
-    leval(sprintf(
-      "EPOCH &
-      SIGNALS keep=${eeg} &
-      ARTIFACTS &
-      SIGSTATS &
-      CHEP-MASK ep-th=3,3,3 &
-      CHEP epoch &
-      DUMP-MASK annot=artifacts &
-      WRITE-ANNOTS file=%s/%s.annots &
-      WRITE edf-dir=%s",
-      filtered_dir,
-      base_name,
-      filtered_dir
-    ))
+    leval(build_filtered_edf_command(filtered_dir, base_name))
   }
 
   filtered_path
