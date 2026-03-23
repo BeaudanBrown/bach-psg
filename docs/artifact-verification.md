@@ -49,18 +49,23 @@ view:
 
 - total epochs retained
 - raw epochs retained after remapping via `E1`
-- raw epochs retained that were flagged in raw QC
+- raw `EMASK` epochs retained
+- raw epochs retained with any artifact-related QC flag (`EMASK`, `MASK`,
+  `CHEP`, `BETA_MASK`, or `DELTA_MASK`)
 - dataset epochs that still appear masked after reload
 
 ## Interpretation
 
-- If the current variant retains raw epochs that raw QC marked as masked, then
-  artifact exclusion is not happening before downstream analysis.
-- If the `with_re` variant removes those epochs and the current variant does
-  not, then an explicit artifact `RE` is required to make the "cleaned" EDF
-  actually exclude them.
+- If the current variant retains raw `EMASK` epochs, then epoch-level artifact
+  exclusion is not happening before downstream analysis.
+- If the `with_re` variant removes raw `EMASK` epochs and the current variant
+  does not, then an explicit artifact `RE` is required to make the "cleaned"
+  EDF actually exclude them.
 - If both variants retain the same epoch set, then the current write path is
   already behaving like an excluded-epoch path and no behavior change is needed.
+- The broader `any_flag` columns are a sensitivity check. They are expected to
+  be larger than `EMASK`, because not every artifact-related flag necessarily
+  becomes a dropped epoch.
 
 ## Input Requirement
 

@@ -101,14 +101,15 @@ inspect_epoch_state <- function(dataset_path, xml_path, stage_mask = NULL) {
   ensure_dt_cols(epoch_map, c("E", "E1", "START", "STOP", "MID", "EMASK"))
 }
 
-summarize_artifact_variant <- function(epoch_map, raw_masked_epochs) {
+summarize_artifact_variant <- function(epoch_map, raw_emask_epochs, raw_any_flag_epochs) {
   dt <- ensure_dt_cols(copy(as.data.table(epoch_map)), c("E", "E1", "EMASK"))
   dt[, raw_epoch := fifelse(is.na(E1), E, E1)]
 
   data.table(
     n_epochs = uniqueN(dt$E),
     n_raw_epochs_retained = uniqueN(dt$raw_epoch),
-    n_raw_masked_epochs_retained = uniqueN(dt$raw_epoch[dt$raw_epoch %in% raw_masked_epochs]),
+    n_raw_emask_epochs_retained = uniqueN(dt$raw_epoch[dt$raw_epoch %in% raw_emask_epochs]),
+    n_raw_any_flag_epochs_retained = uniqueN(dt$raw_epoch[dt$raw_epoch %in% raw_any_flag_epochs]),
     n_dataset_masked_epochs = uniqueN(dt$E[coalesce_zero(dt$EMASK) == 1])
   )
 }
@@ -126,7 +127,10 @@ compare_artifact_variants <- function(
     qc$epoch_qc,
     c("E", "EMASK", "MASK", "CHEP", "BETA_MASK", "DELTA_MASK")
   )
-  raw_masked_epochs <- sort(unique(raw_epoch_qc$E[
+  raw_emask_epochs <- sort(unique(raw_epoch_qc$E[
+    coalesce_zero(raw_epoch_qc$EMASK) == 1
+  ]))
+  raw_any_flag_epochs <- sort(unique(raw_epoch_qc$E[
     coalesce_zero(raw_epoch_qc$EMASK) == 1 |
       coalesce_zero(raw_epoch_qc$MASK) == 1 |
       coalesce_zero(raw_epoch_qc$CHEP) == 1 |
@@ -159,35 +163,37 @@ compare_artifact_variants <- function(
       data.table(
         n_epochs = uniqueN(raw_epoch_qc$E),
         n_raw_epochs_retained = uniqueN(raw_epoch_qc$E),
-        n_raw_masked_epochs_retained = uniqueN(raw_masked_epochs),
+        n_raw_emask_epochs_retained = uniqueN(raw_emask_epochs),
+        n_raw_any_flag_epochs_retained = uniqueN(raw_any_flag_epochs),
         n_dataset_masked_epochs = uniqueN(raw_epoch_qc$E[coalesce_zero(raw_epoch_qc$EMASK) == 1])
       )
     ),
     cbind(
       variant = "current",
       stage = "all",
-      summarize_artifact_variant(current_all_epochs, raw_masked_epochs)
+      summarize_artifact_variant(current_all_epochs, raw_emask_epochs, raw_any_flag_epochs)
     ),
     cbind(
       variant = "current",
       stage = sleep_stage,
-      summarize_artifact_variant(current_stage_epochs, raw_masked_epochs)
+      summarize_artifact_variant(current_stage_epochs, raw_emask_epochs, raw_any_flag_epochs)
     ),
     cbind(
       variant = "with_re",
       stage = "all",
-      summarize_artifact_variant(re_all_epochs, raw_masked_epochs)
+      summarize_artifact_variant(re_all_epochs, raw_emask_epochs, raw_any_flag_epochs)
     ),
     cbind(
       variant = "with_re",
       stage = sleep_stage,
-      summarize_artifact_variant(re_stage_epochs, raw_masked_epochs)
+      summarize_artifact_variant(re_stage_epochs, raw_emask_epochs, raw_any_flag_epochs)
     )
   ), fill = TRUE)
 
   summary[, `:=`(
     edf = basename(edf_path),
-    raw_masked_epoch_total = uniqueN(raw_masked_epochs),
+    raw_emask_epoch_total = uniqueN(raw_emask_epochs),
+    raw_any_flag_epoch_total = uniqueN(raw_any_flag_epochs),
     sleep_stage = sleep_stage
   )]
   setcolorder(summary, c(
@@ -197,8 +203,10 @@ compare_artifact_variants <- function(
     "sleep_stage",
     "n_epochs",
     "n_raw_epochs_retained",
-    "raw_masked_epoch_total",
-    "n_raw_masked_epochs_retained",
+    "raw_emask_epoch_total",
+    "n_raw_emask_epochs_retained",
+    "raw_any_flag_epoch_total",
+    "n_raw_any_flag_epochs_retained",
     "n_dataset_masked_epochs"
   ))
 
