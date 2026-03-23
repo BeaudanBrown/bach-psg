@@ -108,7 +108,7 @@
       {
         devShells.default = pkgs.mkShell {
           env.R_LIBS_USER = "./.Rlib";
-          buildInpus = [
+          buildInputs = [
             pkgs.bashInteractive
           ];
           packages =

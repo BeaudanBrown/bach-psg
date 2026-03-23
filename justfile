@@ -1,17 +1,11 @@
-sync-m3:
-    rsync -avrz --progress --delete m3:bc41_scratch2/Spindles/_targets/ ./_targets/
+default:
+    @just --list
 
-sync-m3-edfs:
-    rsync -avrz --progress --delete m3:bc41_scratch2/Spindles/edfs/ ./edfs/
+manifest:
+    Rscript -e 'targets::tar_manifest()'
 
-sync-m3-xml:
-    rsync -avrz --progress --delete m3:bc41_scratch2/Spindles/edfs/*.XML ./edfs/
+run:
+    Rscript -e 'targets::tar_make()'
 
-push-m3-edfs:
-    rsync -avrz --progress /s/Epi-Dementia/Pase-ED/Studies/BACH_Sleep/edfs/Displayedsignals_inclFiltering/ m3:bc41_scratch2/Spindles/edfs/
-
-push-m3:
-    rsync -avrz --progress ./_targets/ m3:bc41_scratch2/Spindles/_targets/
-
-push-rack-edfs:
-    rsync -avrz --progress /s/Epi-Dementia/Pase-ED/Studies/BACH_Sleep/edfs/Displayedsignals_inclFiltering/ bottom:documents/Spindles/edfs/
+psd-csv:
+    Rscript -e 'targets::tar_make(psd_csv)'

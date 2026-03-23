@@ -331,6 +331,15 @@ list(
       )
 
     }
+  ),
+  tar_target(
+    psd_csv,
+    {
+      path <- file.path(data_dir, "psd_dt.csv")
+      fwrite(psd_dt, path)
+      path
+    },
+    format = "file"
   )
 )
 # combined sig model results into one data.table
