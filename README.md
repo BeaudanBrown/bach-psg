@@ -28,8 +28,6 @@ intentionally excluded from version control.
 
 - [`_targets.R`](./_targets.R): pipeline graph definition.
 - [`R/`](./R): reusable pipeline functions, split by concern.
-- [`scripts/`](./scripts): one-off or exploratory analysis scripts that are not
-  part of the `{targets}` pipeline.
 - [`docs/`](./docs): public-facing documentation, development guidance, and
   publication boundary notes.
 - `data/`, `edfs/`, `Displayedsignals_inclFiltering/`, `_targets/`: local data
@@ -62,9 +60,10 @@ distribution point for private or controlled participant data. See
 [docs/data-boundary.md](./docs/data-boundary.md) for the intended publication
 boundary.
 
-## Notes On Exploratory Code
+## Scope
 
-The exploratory regression script now lives at
-[`scripts/regression_reanalysis_models.R`](./scripts/regression_reanalysis_models.R).
-It is retained for reference, but it is not the canonical entrypoint for the
-reproducible analysis pipeline.
+The tracked repository is intended to contain only the maintained pipeline, its
+reusable functions, and the documentation needed to run or inspect that
+pipeline. Legacy ad hoc scripts and serialized snapshot artifacts that are not
+part of the current `{targets}` graph are intentionally removed from version
+control.

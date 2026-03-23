@@ -37,7 +37,9 @@ just psd-csv
 - `R/qc.R` contains QC summaries and review tables.
 - `R/analysis.R` contains spindle/SO transforms and model helpers.
 
-## Non-Pipeline Scripts
+## Boundary
 
-The `scripts/` directory is for one-off or exploratory analysis code. Those
-scripts should not become hidden pipeline dependencies.
+Only files required for the maintained `{targets}` pipeline should remain
+tracked here. Ad hoc regression scripts, old serialized snapshots, and other
+non-pipeline assets should stay out of the repo unless they become part of the
+supported workflow.

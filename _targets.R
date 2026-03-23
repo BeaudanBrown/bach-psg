@@ -193,18 +193,6 @@ list(
       ),
       pattern = map(edf_files)
     ),
-    # tar_target(
-    #   stage_threshold_results,
-    #   get_stage_spindles_with_threshold(
-    #   file.path(edf_dir, "filtered"),
-    #   edf_files,
-    #   threshold,
-    #   sleep_stage = mask
-    #   ),
-    #   pattern = map(edf_files)
-    # ),
-    #   readRDS(paste0("./threshold_results_", name, ".rds"))
-    # ),
     # Combine spindle and SO data into a data.table with relevant columns
     tar_target(
       filtered_results,
