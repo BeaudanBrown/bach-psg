@@ -54,7 +54,7 @@ ensure_filtered_edf <- function(edf_path) {
 
   if (!file.exists(filtered_path)) {
     ledf(edf_path, base_name, xml_path)
-    leval(build_filtered_edf_command(filtered_dir, base_name))
+    leval(build_filtered_edf_command(filtered_dir, base_name, include_artifact_re = TRUE))
   }
 
   filtered_path
