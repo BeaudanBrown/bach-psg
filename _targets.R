@@ -53,12 +53,12 @@ list(
     format = "file"
   ),
   ##########################
-  # Threshold calculation
+  # Threshold calculation (uses filtered EDFs)
   ##########################
   tar_target(
     edf_results,
-    process_edf(edf_files),
-    pattern = map(edf_files)
+    process_edf(filtered_edf_files),
+    pattern = map(filtered_edf_files)
   ),
   tar_target(
     per_ppt_thresholds,
@@ -180,15 +180,15 @@ list(
       name = c("N2", "N3")
     ),
     names = "name",
-    # Run Luna to get spindle/SO data for given mask
+    # Run Luna to get spindle/SO data for given mask (uses filtered EDFs)
     tar_target(
       stage_threshold_results,
       get_stage_spindles_with_threshold(
-        edf_files,
+        filtered_edf_files,
         threshold,
         sleep_stage = mask
       ),
-      pattern = map(edf_files)
+      pattern = map(filtered_edf_files)
     ),
     # QC/sensitivity branch:
     # run stage-restricted spindle detection on the raw EDF without

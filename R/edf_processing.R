@@ -25,9 +25,12 @@ build_filtered_edf_command <- function(filtered_dir, base_name, include_artifact
   )
 }
 
-process_edf <- function(edf_path) {
-  base_name <- tools::file_path_sans_ext(basename(edf_path))
-  load_filtered_edf(edf_path)
+process_edf <- function(filtered_edf_paths) {
+  # filtered_edf_paths may contain both .edf and .annots paths
+  # Extract just the .edf file
+  filtered_edf_path <- filtered_edf_paths[grepl("\\.edf$", filtered_edf_paths)]
+  base_name <- tools::file_path_sans_ext(basename(filtered_edf_path))
+  load_edf(filtered_edf_path)
 
   result <- data.table(
     bach_id = base_name
@@ -282,15 +285,18 @@ get_empirical_threshold <- function(
 }
 
 get_stage_spindles_with_threshold <- function(
-  edf_path,
+  filtered_edf_paths,
   threshold,
   sleep_stage
 ) {
-  base_name <- tools::file_path_sans_ext(basename(edf_path))
+  # filtered_edf_paths may contain both .edf and .annots paths
+  # Extract just the .edf file
+  filtered_edf_path <- filtered_edf_paths[grepl("\\.edf$", filtered_edf_paths)]
+  base_name <- tools::file_path_sans_ext(basename(filtered_edf_path))
   result <- data.table(
     bach_id = base_name
   )
-  load_filtered_edf(edf_path)
+  load_edf(filtered_edf_path)
 
   leval(paste0("MASK ifnot=", sleep_stage, " & RE"))
   result$psd <- leval("PSD spectrum")
