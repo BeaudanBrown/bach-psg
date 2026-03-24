@@ -44,6 +44,15 @@ list(
     fread(file.path(data_dir, "data_cleaner.v2.csv"))
   ),
   ##########################
+  # Filtered EDFs (artifact-cleaned)
+  ##########################
+  tar_target(
+    filtered_edf_files,
+    create_filtered_edf(edf_files),
+    pattern = map(edf_files),
+    format = "file"
+  ),
+  ##########################
   # Threshold calculation
   ##########################
   tar_target(

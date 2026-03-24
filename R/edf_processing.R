@@ -42,30 +42,39 @@ process_edf <- function(edf_path) {
   result
 }
 
-ensure_filtered_edf <- function(edf_path) {
+create_filtered_edf <- function(edf_path) {
   filtered_dir <- file.path(dirname(edf_path), "filtered")
   base_name <- tools::file_path_sans_ext(basename(edf_path))
   xml_path <- paste0(edf_path, ".XML")
   filtered_path <- file.path(filtered_dir, paste0(base_name, ".edf"))
+  annot_path <- file.path(filtered_dir, paste0(base_name, ".annots"))
 
   if (!dir.exists(filtered_dir)) {
-    dir.create(filtered_dir)
+    dir.create(filtered_dir, recursive = TRUE)
   }
 
-  if (!file.exists(filtered_path)) {
-    ledf(edf_path, base_name, xml_path)
-    leval(build_filtered_edf_command(filtered_dir, base_name, include_artifact_re = TRUE))
-  }
+  ledf(edf_path, base_name, xml_path)
+  leval(build_filtered_edf_command(filtered_dir, base_name, include_artifact_re = TRUE))
+  lrefresh()
 
-  filtered_path
+  # Return both files so targets tracks them
+  c(filtered_path, annot_path)
 }
 
-load_filtered_edf <- function(edf_path) {
+get_filtered_edf_path <- function(edf_path) {
+  filtered_dir <- file.path(dirname(edf_path), "filtered")
   base_name <- tools::file_path_sans_ext(basename(edf_path))
-  xml_path <- paste0(edf_path, ".XML")
-  filtered_path <- ensure_filtered_edf(edf_path)
+  file.path(filtered_dir, paste0(base_name, ".edf"))
+}
 
-  ledf(filtered_path, base_name, xml_path)
+load_edf <- function(edf_path, xml_path = NULL) {
+  base_name <- tools::file_path_sans_ext(basename(edf_path))
+  if (is.null(xml_path)) {
+    # Assume XML is named like the original EDF (not the filtered one)
+    # For filtered EDFs, the XML is still with the original
+    xml_path <- paste0(gsub("/filtered/", "/", edf_path), ".XML")
+  }
+  ledf(edf_path, base_name, xml_path)
 }
 
 get_raw_qc_data <- function(edf_path) {
