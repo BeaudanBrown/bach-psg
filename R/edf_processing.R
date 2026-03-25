@@ -49,6 +49,7 @@ create_filtered_edf <- function(edf_path) {
   filtered_dir <- file.path(dirname(edf_path), "filtered")
   base_name <- tools::file_path_sans_ext(basename(edf_path))
   xml_path <- paste0(edf_path, ".XML")
+  filtered_name <- paste0(base_name, "_filtered")
   filtered_path <- file.path(filtered_dir, paste0(base_name, "_filtered", ".edf"))
   annot_path <- file.path(filtered_dir, paste0(base_name, ".annots"))
 
@@ -57,7 +58,7 @@ create_filtered_edf <- function(edf_path) {
   }
 
   ledf(edf_path, base_name, xml_path)
-  leval(build_filtered_edf_command(filtered_dir, base_name, include_artifact_re = TRUE))
+  leval(build_filtered_edf_command(filtered_dir, filtered_name, include_artifact_re = TRUE))
   lrefresh()
 
   # Return both files so targets tracks them
