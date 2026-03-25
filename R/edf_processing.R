@@ -58,7 +58,9 @@ create_filtered_edf <- function(edf_path) {
   }
 
   ledf(edf_path, base_name, xml_path)
-  leval(build_filtered_edf_command(filtered_dir, filtered_name, include_artifact_re = TRUE))
+  cmd <- build_filtered_edf_command(filtered_dir, filtered_name, include_artifact_re = TRUE)
+  print(cmd)
+  leval(cmd)
   lrefresh()
 
   # Return both files so targets tracks them
