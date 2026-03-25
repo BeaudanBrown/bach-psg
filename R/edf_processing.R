@@ -49,7 +49,7 @@ create_filtered_edf <- function(edf_path) {
   filtered_dir <- file.path(dirname(edf_path), "filtered")
   base_name <- tools::file_path_sans_ext(basename(edf_path))
   xml_path <- paste0(edf_path, ".XML")
-  filtered_path <- file.path(filtered_dir, paste0(base_name, ".edf"))
+  filtered_path <- file.path(filtered_dir, paste0(base_name, "_filtered", ".edf"))
   annot_path <- file.path(filtered_dir, paste0(base_name, ".annots"))
 
   if (!dir.exists(filtered_dir)) {
