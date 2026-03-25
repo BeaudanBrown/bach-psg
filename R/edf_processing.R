@@ -17,11 +17,12 @@ build_filtered_edf_command <- function(filtered_dir, base_name, include_artifact
     CHEP epoch &
     DUMP-MASK annot=artifacts%s &
     WRITE-ANNOTS file=%s/%s.annots &
-    WRITE edf-dir=%s",
+    WRITE edf-dir=%s edf=%s",
     artifact_re,
     filtered_dir,
     base_name,
-    filtered_dir
+    filtered_dir,
+    base_name
   )
 }
 
