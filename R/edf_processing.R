@@ -79,7 +79,7 @@ load_edf <- function(edf_path, xml_path = NULL) {
   if (is.null(xml_path)) {
     # Assume XML is named like the original EDF (not the filtered one)
     # For filtered EDFs, the XML is still with the original
-    xml_path <- paste0(gsub("/filtered/", "/", edf_path), ".XML")
+    xml_path <- paste0(gsub("_filtered", "", gsub("/filtered/", "/", edf_path)), ".XML")
   }
   ledf(edf_path, base_name, xml_path)
 }
