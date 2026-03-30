@@ -16,6 +16,7 @@ build_filtered_edf_command <- function(filtered_dir, base_name, include_artifact
     CHEP-MASK ep-th=3,3,3 &
     CHEP epoch &
     DUMP-MASK annot=artifacts%s &
+    QC eeg=C3_M2,C4_M1
     WRITE-ANNOTS file=%s/%s.annots &
     WRITE edf-dir=%s edf=%s",
     artifact_re,
@@ -38,7 +39,7 @@ process_edf <- function(filtered_edf_paths) {
   )
 
   leval("MASK ifnot=N2,N3 & RE")
-  result$psd <- leval("PSD spectrum")
+  result$psd <- leval("PSD spectrum epoch epoch-spectrum")
   result$spindles <- leval(
     "SPINDLES fc=11,15 empirical set-empirical median"
   )
