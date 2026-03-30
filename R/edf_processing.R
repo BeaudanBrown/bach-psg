@@ -16,7 +16,7 @@ build_filtered_edf_command <- function(filtered_dir, base_name, include_artifact
     CHEP-MASK ep-th=3,3,3 &
     CHEP epoch &
     DUMP-MASK annot=artifacts%s &
-    QC eeg=C3_M2,C4_M1
+    QC eeg=C3_M2,C4_M1 &
     WRITE-ANNOTS file=%s/%s.annots &
     WRITE edf-dir=%s edf=%s",
     artifact_re,
