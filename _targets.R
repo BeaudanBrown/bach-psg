@@ -173,6 +173,13 @@ list(
   ##########################
   # Analysis pipeline
   ##########################
+  tar_target(
+    qc_results,
+    get_qc(
+      filtered_edf_files
+    ),
+    pattern = map(filtered_edf_files)
+  ),
   tar_map(
     # Sleep stage masks
     values = data.table(
@@ -180,14 +187,6 @@ list(
       name = c("N2", "N3")
     ),
     names = "name",
-    tar_target(
-      qc_results,
-      get_qc(
-        filtered_edf_files,
-        sleep_stage = mask
-      ),
-      pattern = map(filtered_edf_files)
-    ),
     # Run Luna to get spindle/SO data for given mask (uses filtered EDFs)
     tar_target(
       psd_results,

@@ -292,8 +292,7 @@ get_empirical_threshold <- function(
 }
 
 get_qc <- function(
-  filtered_edf_paths,
-  sleep_stage
+  filtered_edf_paths
 ) {
   # filtered_edf_paths may contain both .edf and .annots paths
   # Extract just the .edf file
@@ -304,7 +303,6 @@ get_qc <- function(
   )
   load_edf(filtered_edf_path)
 
-  leval(paste0("MASK ifnot=", sleep_stage, " & RE"))
   result$psd <- leval("QC eeg=C3_M2,C4_M1 epoch")
   lrefresh()
   result
