@@ -11,13 +11,14 @@ build_filtered_edf_command <- function(filtered_dir, base_name, include_artifact
 
   sprintf(
     "EPOCH &
+    SUPPRESS-ECG ecg=ECG &
     SIGNALS keep=${eeg} &
     ARTIFACTS &
     SIGSTATS &
     CHEP-MASK ep-th=3,3,3 &
     CHEP epoch &
+    EDGER sig=EEG epoch mask &
     DUMP-MASK annot=artifacts%s &
-    SUPPRESS-ECG ecg=ECG &
     QC eeg=C3_M2,C4_M1 &
     WRITE-ANNOTS file=%s/%s.annots &
     WRITE edf-dir=%s edf=%s",
