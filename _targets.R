@@ -182,6 +182,14 @@ list(
     names = "name",
     # Run Luna to get spindle/SO data for given mask (uses filtered EDFs)
     tar_target(
+      psd_results,
+      get_psd_results(
+        filtered_edf_files,
+        sleep_stage = mask
+      ),
+      pattern = map(filtered_edf_files)
+    ),
+    tar_target(
       stage_threshold_results,
       get_stage_spindles_with_threshold(
         filtered_edf_files,
@@ -311,8 +319,8 @@ list(
     psd_dt,
     {
       stages <- list(
-        N2 = stage_threshold_results_N2$psd,
-        N3 = stage_threshold_results_N3$psd
+        N2 = psd_results_N2$psd,
+        N3 = psd_results_N3$psd
       )
       rbindlist(
         lapply(names(stages), function(stage_name) {
