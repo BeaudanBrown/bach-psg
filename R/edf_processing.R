@@ -291,6 +291,25 @@ get_empirical_threshold <- function(
   median(CH_F$EMPTH)
 }
 
+get_qc <- function(
+  filtered_edf_paths,
+  sleep_stage
+) {
+  # filtered_edf_paths may contain both .edf and .annots paths
+  # Extract just the .edf file
+  filtered_edf_path <- filtered_edf_paths[grepl("\\.edf$", filtered_edf_paths)]
+  base_name <- tools::file_path_sans_ext(basename(filtered_edf_path))
+  result <- data.table(
+    bach_id = base_name
+  )
+  load_edf(filtered_edf_path)
+
+  leval(paste0("MASK ifnot=", sleep_stage, " & RE"))
+  result$psd <- leval("QC eeg=C3_M2,C4_M1 epoch")
+  lrefresh()
+  result
+}
+
 get_psd_results <- function(
   filtered_edf_paths,
   sleep_stage
