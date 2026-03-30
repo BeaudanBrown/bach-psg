@@ -352,6 +352,23 @@ list(
       path
     },
     format = "file"
+  ),
+  tar_target(
+    qc_csv,
+    {
+      path <- file.path(data_dir, "qc_dt.csv")
+      qc_dt <- rbindlist(
+        lapply(seq_len(nrow(qc_results)), function(i) {
+          dt <- as.data.table(qc_results$psd[[i]]$CH_EEG)
+          dt[, bach_id := qc_results$bach_id[i]]
+          dt
+        }),
+        fill = TRUE
+      )
+      fwrite(qc_dt, path)
+      path
+    },
+    format = "file"
   )
 )
 # combined sig model results into one data.table

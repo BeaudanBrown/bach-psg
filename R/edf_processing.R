@@ -8,16 +8,17 @@ build_filtered_edf_command <- function(filtered_dir, base_name, include_artifact
     ""
   }
   # QC eeg=C3_M2,C4_M1 &
+  # FILTER bandpass=0.3,35 &
 
   sprintf(
     "EPOCH &
     SUPPRESS-ECG ecg=ECG &
     SIGNALS keep=${eeg} &
+    EDGER sig=${eeg} epoch mask &
     ARTIFACTS &
     SIGSTATS &
-    CHEP-MASK ep-th=3,3,3 &
+    CHEP-MASK ep-th=3,3,3 max=200,0.05 clipped=0.05 flat=0.05 &
     CHEP epoch &
-    EDGER sig=EEG epoch mask &
     DUMP-MASK annot=artifacts%s &
     QC eeg=C3_M2,C4_M1 &
     WRITE-ANNOTS file=%s/%s.annots &
