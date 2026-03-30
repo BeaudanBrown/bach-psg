@@ -39,7 +39,7 @@ process_edf <- function(filtered_edf_paths) {
   )
 
   leval("MASK ifnot=N2,N3 & RE")
-  result$psd <- leval("PSD spectrum epoch epoch-spectrum")
+  result$psd <- leval("PSD spectrum epoch")
   result$spindles <- leval(
     "SPINDLES fc=11,15 empirical set-empirical median"
   )

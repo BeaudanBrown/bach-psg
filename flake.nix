@@ -15,14 +15,15 @@
         pkgsUnstable = nixpkgsUnstable.legacyPackages.${system};
         luna-base = with pkgs; stdenv.mkDerivation rec {
           pname = "luna-base";
-          version = "1.0.0";
+          version = "unstable-2026-03-27";
           enableParallelBuilding = true;
 
+          # Track master here because the QC command is newer than v1.0.0.
           src = fetchFromGitHub {
             owner = "remnrem";
             repo = "luna-base";
-            rev = "refs/tags/v${version}";
-            hash = "sha256-IWftBR1rU5yejdmngg6eFrLe/Pyfq/Qok/fq/cXyKX8=";
+            rev = "70e36b5d43679b1352036e18e080f2e7a8cc4021";
+            hash = "sha256-yoAaiKx7/ffISPKdZyxjpaiQgBngkn5Ja628L+S6+Uc=";
           };
 
           nativeBuildInputs = [
@@ -31,6 +32,7 @@
 
           buildInputs = [
             fftw
+            lightgbm
           ];
 
           installPhase = ''
@@ -66,8 +68,8 @@
           src = pkgs.fetchFromGitHub {
             owner = "remnrem";
             repo = "luna";
-            rev = "036fec226135f2f4c5712ac10fec81cd06e8faf5";
-            sha256 = "sha256-jtXi1VV6k5YyUEcXJued8vs3BWu2gvdSXPaCglytbnw=";
+            rev = "dcc5fc2aa1b0abedbe2ccc900fc9a6fb1ba8bafe";
+            sha256 = "sha256-3zdt/w84unDz57LKAwRq2oKqz4vLn15ezjvfQzP32UA=";
           };
           propagatedBuildInputs = with pkgs; [
             fftw
