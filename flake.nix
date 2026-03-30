@@ -116,6 +116,8 @@
           configurePhase = ''
                 export FFTW=${pkgs.fftw}
                 export LUNA_BASE=${luna-base}
+                export LGBM_PATH=${pkgs.lightgbm}
+                export LGBM=1
           '';
         };
       in

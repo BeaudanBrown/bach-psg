@@ -11,5 +11,49 @@ index 5092f7d..6495039 100644
 -# redundant
 -#PKG_CPPFLAGS=-I./include/ `pkg-config --cflags fftw3`
 -#PKG_LIBS=include/libluna.a `pkg-config --libs fftw3`
-+PKG_CPPFLAGS = -I${LUNA_BASE}/include/ -I${FFTW}/include/ ${EXTRA_PKG_CPPFLAGS}
-+PKG_LIBS = ${LUNA_BASE}/lib/libluna.a -L${FFTW}/lib/ -lfftw3 ${EXTRA_PKG_LIBS}
++PKG_CPPFLAGS = -I${LUNA_BASE}/include/ -I${FFTW}/include/ -I${LGBM_PATH}/include/ ${EXTRA_PKG_CPPFLAGS}
++PKG_LIBS = ${LUNA_BASE}/lib/libluna.a -L${FFTW}/lib/ -lfftw3 -L${LGBM_PATH}/lib/ -l_lightgbm ${EXTRA_PKG_LIBS}
+diff --git a/configure b/configure
+index ebdd9e1..6a7010b 100755
+--- a/configure
++++ b/configure
+@@ -1,35 +1,4 @@
+-#!/bin/sh
+-
+-cd ./src
+-
+-git_url=https://github.com/remnrem/luna-base
+-
+-export LUNA_ARCH=`${R_HOME}/bin/Rscript -e 'cat(ifelse(.Platform$OS.type == "windows", "WINDOWS", ""))'`
+-
+-if [ -z "${LUNA_ARCH}" ]; then
+-  export LUNA_ARCH=`${R_HOME}/bin/Rscript -e 'cat(ifelse(Sys.info()["sysname"] == "Darwin", "MAC", "LINUX"))'` ;
+-fi
+-
+-echo "detected OS: ${LUNA_ARCH}"
+-
+-rm -rf luna-base
+-${R_HOME}/bin/Rscript -e "git2r::clone(\"${git_url}\", local_path='luna-base')"
+-cd luna-base
+-rm -rf .git .github
+-make -j 2 ARCH=${LUNA_ARCH} FFTW=${FFTW} LGBM=${LGBM} LGBM_PATH=${LGBM_PATH};
+-mkdir -p ../include
+-
+-# TMP
+-#mv *.a *.o ../include
+-#mv eval.h luna.h cmddefs.h ../include
+-# TMP 
+-cp *.a *.o ../include
+-cp eval.h luna.h cmddefs.h ../include
+-
+-cd ../
+-
+-${R_HOME}/bin/Rscript copier.R
+-
+-rm -rf luna-base
+-
+-rm -rf luna.so lunaR.o
++#!/bin/sh
++
++# Nix provides luna-base directly; skip the package's vendored bootstrap path.
++exit 0
