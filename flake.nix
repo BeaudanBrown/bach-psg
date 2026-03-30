@@ -35,13 +35,25 @@
             lightgbm
           ];
 
+          buildPhase = ''
+                runHook preBuild
+
+                make -j"$NIX_BUILD_CORES"
+                if grep -q '^tocol:' Makefile; then
+                  make -j"$NIX_BUILD_CORES" tocol
+                fi
+
+                runHook postBuild
+                '';
+
           installPhase = ''
                 runHook preInstall
 
-                install -Dm755 luna "$out/bin/luna"
-                install -Dm755 destrat "$out/bin/destrat"
-                install -Dm755 behead "$out/bin/behead"
-                install -Dm755 tocol "$out/bin/tocol"
+                for bin in luna destrat behead tocol; do
+                  if [ -x "$bin" ]; then
+                    install -Dm755 "$bin" "$out/bin/$bin"
+                  fi
+                done
                 find . -name '*.h' -exec install -Dm644 {} $out/include/{} \;
 
                 # These do not have .h extensions
