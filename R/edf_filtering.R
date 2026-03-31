@@ -19,7 +19,7 @@ lookup_channel_exclusions <- function(edf_path, channel_exclusions = PIPELINE_CH
     return(character())
   }
 
-  matched <- channel_exclusions[channel_exclusions$bach_id == ..bach_id]
+  matched <- channel_exclusions[channel_exclusions[["bach_id"]] == bach_id]
   if (!nrow(matched)) {
     return(character())
   }
