@@ -13,10 +13,15 @@ build_psd_targets <- function() {
       pattern = cross(filtered_edf_files, sleep_stage)
     ),
     tar_target(
+      psd_all_dt,
+      {
+        collect_psd_b_ch(psd_results)
+      }
+    ),
+    tar_target(
       psd_dt,
       {
-        dt <- collect_psd_b_ch(psd_results)
-        dt[filter_profile == filter_profile_names]
+        psd_all_dt[filter_profile == filter_profile_names]
       },
       pattern = map(filter_profile_names)
     )
