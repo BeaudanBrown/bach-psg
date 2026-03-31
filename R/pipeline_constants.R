@@ -5,6 +5,8 @@ PIPELINE_DEFAULT_QC_COMMANDS <- c(
 PIPELINE_FILTER_PROFILES <- list(
   base = list(
   ),
+  unfiltered = list(
+  ),
   bandpass_0_3_35 = list(
     filter_commands = "FILTER bandpass=0.3,35 ripple=0.02 tw=1"
   ),

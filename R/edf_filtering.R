@@ -83,6 +83,11 @@ create_filtered_edf <- function(edf_path, xml_path = NULL, filter_profile_name =
     unlink(annot_path, force = TRUE)
   }
 
+  if (identical(filter_profile_name, "unfiltered")) {
+    file.copy(edf_path, filtered_path, overwrite = TRUE)
+    return(filtered_path)
+  }
+
   ledf(edf_path, raw_base_name, annots = xml_path)
   filter_commands <- filter_profile$filter_commands %||% character()
   commands <- c(
