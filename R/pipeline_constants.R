@@ -16,7 +16,7 @@ PIPELINE_FILTER_PROFILES <- list(
 PIPELINE_SLEEP_STAGES <- c("N2", "N3")
 PIPELINE_SPINDLE_FREQS <- c(11, 15)
 PIPELINE_CHANNEL_PREFIXES <- c("C3", "C4")
-PIPELINE_DEFAULT_KEEP_CHANNELS <- c("F3_M2", "F4_M1", "C3_M2", "C4_M1", "O1_M2", "O2_M1")
+PIPELINE_DEFAULT_KEEP_CHANNELS <- c("C3_M2", "C4_M1")
 PIPELINE_OUTCOMES <- c("visualrepro2_total", "logicalmem_delay_total")
 PIPELINE_PREDICTORS <- c("overlap", "angle", "mag")
 PIPELINE_MODERATORS <- c(
@@ -26,7 +26,7 @@ PIPELINE_MODERATORS <- c(
 )
 
 PIPELINE_CHANNEL_KEEP_OVERRIDES <- list(
-  BACH0018 = c("F3_M2", "F4_M1", "C4_M1", "O1_M2", "O2_M1"),
-  BACH0243 = c("F3_M2", "F4_M1", "C3_M2", "O1_M2", "O2_M1"),
-  BACH0052 = c("F3_M2", "F4_M1", "C3_M2", "O1_M2", "O2_M1")
+  BACH0018 = c("C4_M1"),
+  BACH0243 = c("C3_M2"),
+  BACH0052 = c("C3_M2")
 )
