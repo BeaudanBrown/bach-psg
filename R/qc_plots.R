@@ -64,28 +64,24 @@ plot_qc_density <- function(qc_all_dt, metric, channel, data_dir) {
   }
 
   profile_levels <- names(PIPELINE_FILTER_PROFILES)
-  legend_title <- "Filter"
-  if (metric == "P_LN") {
-    zero_summary <- plot_dt[
-      ,
-      .(
-        zero_prop = mean(metric_value == 0, na.rm = TRUE)
-      ),
-      by = filter_profile
-    ]
-    legend_labels <- setNames(
-      sprintf(
-        "%s (%s zero)",
-        zero_summary$filter_profile,
-        scales::percent(zero_summary$zero_prop, accuracy = 0.1)
-      ),
-      zero_summary$filter_profile
-    )
-    plot_dt <- plot_dt[metric_value > 0]
-    legend_title <- "Filter (% zero)"
-  } else {
-    legend_labels <- setNames(profile_levels, profile_levels)
-  }
+  zero_summary <- plot_dt[
+    ,
+    .(
+      zero_prop = mean(metric_value == 0, na.rm = TRUE)
+    ),
+    by = filter_profile
+  ]
+  zero_lookup <- setNames(zero_summary$zero_prop, zero_summary$filter_profile)
+  legend_labels <- setNames(
+    sprintf(
+      "%s (%s zero)",
+      profile_levels,
+      scales::percent(zero_lookup[profile_levels] %||% 0, accuracy = 0.1)
+    ),
+    profile_levels
+  )
+  plot_dt <- plot_dt[metric_value > 0]
+  legend_title <- "Filter (% zero)"
 
   if (!nrow(plot_dt)) {
     grDevices::png(path, width = 1800, height = 1200, res = 200)
