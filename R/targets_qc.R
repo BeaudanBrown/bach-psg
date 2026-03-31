@@ -65,7 +65,13 @@ build_qc_targets <- function() {
     ),
     tar_target(
       qc_dt,
-      qc_all_dt[filter_profile == filter_profile_names],
+      {
+        if (!nrow(qc_all_dt) || !"filter_profile" %in% names(qc_all_dt)) {
+          data.table()
+        } else {
+          qc_all_dt[filter_profile == filter_profile_names]
+        }
+      },
       pattern = map(filter_profile_names)
     )
   )
