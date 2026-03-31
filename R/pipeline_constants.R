@@ -2,15 +2,6 @@ PIPELINE_DEFAULT_QC_COMMANDS <- c(
   "CHEP-MASK ep-th=3,3,3 max=200,0.05 clipped=0.05 flat=0.05"
 )
 
-PIPELINE_DEFAULT_EEG_CHANNELS <- c(
-  "F3_M2",
-  "F4_M1",
-  "C3_M2",
-  "C4_M1",
-  "O1_M2",
-  "O2_M1"
-)
-
 PIPELINE_FILTER_PROFILES <- list(
   base = list(
   ),

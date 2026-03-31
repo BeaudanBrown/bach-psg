@@ -29,18 +29,11 @@ lookup_channel_exclusions <- function(edf_path, channel_exclusions = PIPELINE_CH
   unique(unlist(matched$drop_channels, use.names = FALSE))
 }
 
-get_eeg_channels_for_edf <- function(edf_path, drop_channels = character()) {
-  if (!length(drop_channels)) {
-    return(PIPELINE_DEFAULT_EEG_CHANNELS)
-  }
-  setdiff(PIPELINE_DEFAULT_EEG_CHANNELS, drop_channels)
-}
-
 build_filtered_edf_command <- function(
   filtered_dir,
   base_name,
   filter_profile = NULL,
-  eeg_channels = PIPELINE_DEFAULT_EEG_CHANNELS
+  drop_channels = character()
 ) {
   profile <- list(
     filter_commands = character(),
@@ -96,13 +89,21 @@ build_filtered_edf_command <- function(
   } else {
     ""
   }
+  signal_command <- if (length(drop_channels)) {
+    sprintf(
+      "SIGNALS keep=${eeg} drop=%s",
+      paste(drop_channels, collapse = ",")
+    )
+  } else {
+    "SIGNALS keep=${eeg}"
+  }
 
   sprintf(
     "EPOCH &
     SUPPRESS-ECG ecg=ECG &
-    SIGNALS keep=%s &
+    %s &
     MASK clear &
-    EDGER sig=%s epoch mask &
+    EDGER sig=${eeg} epoch mask &
     %s
     ARTIFACTS &
     SIGSTATS &
@@ -112,8 +113,7 @@ build_filtered_edf_command <- function(
     QC eeg=C3_M2,C4_M1 &
     WRITE-ANNOTS file=%s/%s.annots annot=artifacts &
     WRITE edf-dir=%s edf=%s",
-    paste(eeg_channels, collapse = ","),
-    paste(eeg_channels, collapse = ","),
+    signal_command,
     pre_artifact_filter_step,
     qc_chain,
     filtered_dir,
@@ -145,7 +145,7 @@ create_filtered_edf <- function(edf_path, xml_path = NULL, filter_profile_name =
     filtered_dir = filtered_dir,
     base_name = filtered_name,
     filter_profile = filter_profile,
-    eeg_channels = get_eeg_channels_for_edf(edf_path, drop_channels)
+    drop_channels = drop_channels
   )
   print(cmd)
   leval(cmd)
