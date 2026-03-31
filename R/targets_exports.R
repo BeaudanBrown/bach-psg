@@ -1,6 +1,16 @@
 build_export_targets <- function() {
   list(
     tar_target(
+      raw_qc_csv,
+      {
+        output_dir <- build_output_dir(data_dir, "raw")
+        path <- file.path(output_dir, "qc_dt.csv")
+        fwrite(raw_qc_dt, path)
+        path
+      },
+      format = "file"
+    ),
+    tar_target(
       psd_csv,
       {
         output_dir <- build_output_dir(data_dir, filter_profile_names)

@@ -123,7 +123,7 @@ compare_artifact_variants <- function(
   }
   sleep_stage <- match.arg(sleep_stage)
   xml_path <- validate_edf_pair(edf_path)
-  qc <- get_raw_qc_data(edf_path)
+  qc <- get_raw_artifact_qc_data(edf_path)
   raw_epoch_qc <- ensure_dt_cols(
     qc$epoch_qc,
     c("E", "EMASK", "MASK", "CHEP", "BETA_MASK", "DELTA_MASK")
