@@ -1,5 +1,20 @@
 library(luna)
 
+get_raw_xml_path <- function(edf_path) {
+  candidates <- c(
+    paste0(edf_path, ".XML"),
+    file.path(
+      dirname(edf_path),
+      paste0(tools::file_path_sans_ext(basename(edf_path)), ".XML")
+    )
+  )
+  existing <- candidates[file.exists(candidates)]
+  if (length(existing)) {
+    return(existing[[1]])
+  }
+  candidates[[1]]
+}
+
 build_filtered_edf_command <- function(
   filtered_dir,
   base_name,
@@ -89,7 +104,7 @@ build_filtered_edf_command <- function(
 create_filtered_edf <- function(edf_path, filter_profile_name = "base", filter_profile = NULL) {
   filtered_dir <- file.path(dirname(edf_path), "filtered", filter_profile_name)
   raw_base_name <- tools::file_path_sans_ext(basename(edf_path))
-  xml_path <- paste0(edf_path, ".XML")
+  xml_path <- get_raw_xml_path(edf_path)
   filtered_name <- paste0(raw_base_name, "_filtered")
   filtered_path <- file.path(filtered_dir, paste0(raw_base_name, "_filtered", ".edf"))
   annot_path <- file.path(filtered_dir, paste0(filtered_name, ".annots"))
@@ -120,13 +135,14 @@ load_edf <- function(edf_path, xml_path = NULL) {
   if (is.null(xml_path)) {
     # Assume XML is named like the original EDF (not the filtered one)
     # For filtered EDFs, the XML is still with the original
-    raw_dir <- if (grepl("/filtered", dirname(edf_path), perl = TRUE)) {
+    raw_edf_dir <- if (grepl("/filtered", dirname(edf_path), perl = TRUE)) {
       sub("/filtered(?:/[^/]+)?$", "", dirname(edf_path), perl = TRUE)
     } else {
       dirname(edf_path)
     }
     raw_base_name <- infer_bach_id(edf_path)
-    xml_path <- file.path(raw_dir, paste0(raw_base_name, ".XML"))
+    raw_edf_path <- file.path(raw_edf_dir, paste0(raw_base_name, ".edf"))
+    xml_path <- get_raw_xml_path(raw_edf_path)
   }
   ledf(edf_path, base_name, xml_path)
 }
