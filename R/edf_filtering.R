@@ -13,21 +13,25 @@ get_raw_xml_path <- function(edf_path) {
   candidates[[1]]
 }
 
-lookup_keep_channels <- function(edf_path, channel_keep = PIPELINE_CHANNEL_KEEP) {
+lookup_keep_channels <- function(
+  edf_path,
+  channel_keep = PIPELINE_CHANNEL_KEEP_OVERRIDES,
+  default_keep_channels = PIPELINE_DEFAULT_KEEP_CHANNELS
+) {
   bach_id <- infer_bach_id(edf_path)
   if (!length(channel_keep)) {
-    return(character())
+    return(default_keep_channels)
   }
 
   matched <- channel_keep[[bach_id]]
   if (is.null(matched)) {
-    return(character())
+    return(default_keep_channels)
   }
 
   unique(unlist(matched, use.names = FALSE))
 }
 
-create_channel_dropped_edf <- function(edf_path, xml_path = NULL, keep_channels = character()) {
+create_channel_dropped_edf <- function(edf_path, xml_path = NULL, keep_channels = PIPELINE_DEFAULT_KEEP_CHANNELS) {
   raw_base_name <- tools::file_path_sans_ext(basename(edf_path))
   if (is.null(xml_path)) {
     xml_path <- get_raw_xml_path(edf_path)
@@ -45,11 +49,7 @@ create_channel_dropped_edf <- function(edf_path, xml_path = NULL, keep_channels 
   }
 
   ledf(edf_path, raw_base_name, annots = xml_path)
-  signal_keep_step <- if (length(keep_channels)) {
-    sprintf("SIGNALS keep=%s", paste(keep_channels, collapse = ","))
-  } else {
-    "SIGNALS keep=${eeg}"
-  }
+  signal_keep_step <- sprintf("SIGNALS keep=%s", paste(keep_channels, collapse = ","))
   commands <- c(
     signal_keep_step,
     sprintf("WRITE edf-dir=%s edf=%s", dirname(dropped_path), raw_base_name)

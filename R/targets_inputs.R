@@ -19,7 +19,7 @@ build_input_targets <- function() {
     ),
     tar_target(
       channel_keep,
-      PIPELINE_CHANNEL_KEEP
+      PIPELINE_CHANNEL_KEEP_OVERRIDES
     ),
     tar_target(
       raw_edf_inputs,
