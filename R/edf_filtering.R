@@ -54,8 +54,6 @@ build_filtered_edf_command <- function(
     }
   }
 
-  artifact_re <- " & RE"
-
   filter_commands <- vapply(
     profile$filter_commands,
     as.character,
@@ -87,13 +85,12 @@ build_filtered_edf_command <- function(
     SIGSTATS &
     %s &
     CHEP epoch &
-    DUMP-MASK annot=artifacts%s &
+    DUMP-MASK annot=artifacts &
     QC eeg=C3_M2,C4_M1 &
-    WRITE-ANNOTS file=%s/%s.annots &
+    WRITE-ANNOTS file=%s/%s.annots annot=artifacts &
     WRITE edf-dir=%s edf=%s",
     pre_artifact_filter_step,
     qc_chain,
-    artifact_re,
     filtered_dir,
     base_name,
     filtered_dir,
@@ -143,6 +140,10 @@ load_edf <- function(edf_path, xml_path = NULL) {
     raw_base_name <- infer_bach_id(edf_path)
     raw_edf_path <- file.path(raw_edf_dir, paste0(raw_base_name, ".edf"))
     xml_path <- get_raw_xml_path(raw_edf_path)
+    filtered_annots_path <- file.path(dirname(edf_path), paste0(base_name, ".annots"))
+    if (file.exists(filtered_annots_path)) {
+      xml_path <- paste(xml_path, filtered_annots_path, sep = ",")
+    }
   }
   ledf(edf_path, base_name, xml_path)
 }
