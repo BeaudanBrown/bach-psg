@@ -2,10 +2,15 @@ PIPELINE_DEFAULT_QC_COMMANDS <- c(
   "CHEP-MASK ep-th=3,3,3 max=200,0.05 clipped=0.05 flat=0.05"
 )
 
+PIPELINE_REDUCED_QC_COMMANDS <- c(
+  "CHEP-MASK ep-th=3,3,3"
+)
+
 PIPELINE_FILTER_PROFILES <- list(
-  base = list(
+  original = list(
+    qc_commands = PIPELINE_REDUCED_QC_COMMANDS
   ),
-  unfiltered = list(
+  base = list(
   ),
   bandpass_0_3_35 = list(
     filter_commands = "FILTER bandpass=0.3,35 ripple=0.02 tw=1"
