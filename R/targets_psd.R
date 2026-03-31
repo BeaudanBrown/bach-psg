@@ -15,8 +15,10 @@ build_psd_targets <- function() {
     tar_target(
       psd_dt,
       {
-        collect_psd_b_ch(psd_results)
-      }
+        dt <- collect_psd_b_ch(psd_results)
+        dt[filter_profile == filter_profile_names]
+      },
+      pattern = map(filter_profile_names)
     )
   )
 }

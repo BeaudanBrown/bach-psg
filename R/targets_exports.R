@@ -3,26 +3,14 @@ build_export_targets <- function() {
     tar_target(
       psd_csv,
       {
-        path <- file.path(data_dir, "psd_dt.csv")
-        fwrite(psd_dt, path)
-        path
-      },
-      format = "file"
-    ),
-    tar_target(
-      psd_profile_csv,
-      {
         path <- file.path(
           data_dir,
           sprintf("psd_dt_%s.csv", filter_profile_names)
         )
-        fwrite(
-          psd_dt[filter_profile == filter_profile_names],
-          path
-        )
+        fwrite(psd_dt, path)
         path
       },
-      pattern = map(filter_profile_names),
+      pattern = map(psd_dt, filter_profile_names),
       format = "file"
     ),
     tar_target(
