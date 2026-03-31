@@ -1,0 +1,28 @@
+build_branching_targets <- function() {
+  list(
+    tar_target(
+      sleep_stage,
+      PIPELINE_SLEEP_STAGES
+    ),
+    tar_target(
+      freqs,
+      PIPELINE_SPINDLE_FREQS
+    ),
+    tar_target(
+      channels,
+      PIPELINE_CHANNEL_PREFIXES
+    ),
+    tar_target(
+      outcomes,
+      PIPELINE_OUTCOMES
+    ),
+    tar_target(
+      predictors,
+      PIPELINE_PREDICTORS
+    ),
+    tar_target(
+      moderators,
+      PIPELINE_MODERATORS
+    )
+  )
+}
