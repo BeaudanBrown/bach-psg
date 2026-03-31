@@ -15,10 +15,32 @@ get_raw_xml_path <- function(edf_path) {
   candidates[[1]]
 }
 
+lookup_channel_exclusions <- function(edf_path, channel_exclusions = PIPELINE_CHANNEL_EXCLUSIONS) {
+  bach_id <- infer_bach_id(edf_path)
+  if (!nrow(channel_exclusions)) {
+    return(character())
+  }
+
+  matched <- channel_exclusions[channel_exclusions$bach_id == bach_id]
+  if (!nrow(matched)) {
+    return(character())
+  }
+
+  unique(unlist(matched$drop_channels, use.names = FALSE))
+}
+
+get_eeg_channels_for_edf <- function(edf_path, drop_channels = character()) {
+  if (!length(drop_channels)) {
+    return(PIPELINE_DEFAULT_EEG_CHANNELS)
+  }
+  setdiff(PIPELINE_DEFAULT_EEG_CHANNELS, drop_channels)
+}
+
 build_filtered_edf_command <- function(
   filtered_dir,
   base_name,
-  filter_profile = NULL
+  filter_profile = NULL,
+  eeg_channels = PIPELINE_DEFAULT_EEG_CHANNELS
 ) {
   profile <- list(
     filter_commands = character(),
@@ -78,9 +100,9 @@ build_filtered_edf_command <- function(
   sprintf(
     "EPOCH &
     SUPPRESS-ECG ecg=ECG &
-    SIGNALS keep=${eeg} &
+    SIGNALS keep=%s &
     MASK clear &
-    EDGER sig=${eeg} epoch mask &
+    EDGER sig=%s epoch mask &
     %s
     ARTIFACTS &
     SIGSTATS &
@@ -90,6 +112,8 @@ build_filtered_edf_command <- function(
     QC eeg=C3_M2,C4_M1 &
     WRITE-ANNOTS file=%s/%s.annots annot=artifacts &
     WRITE edf-dir=%s edf=%s",
+    paste(eeg_channels, collapse = ","),
+    paste(eeg_channels, collapse = ","),
     pre_artifact_filter_step,
     qc_chain,
     filtered_dir,
@@ -99,7 +123,7 @@ build_filtered_edf_command <- function(
   )
 }
 
-create_filtered_edf <- function(edf_path, xml_path = NULL, filter_profile_name = "base", filter_profile = NULL) {
+create_filtered_edf <- function(edf_path, xml_path = NULL, filter_profile_name = "base", filter_profile = NULL, drop_channels = character()) {
   filtered_dir <- file.path(dirname(edf_path), "filtered", filter_profile_name)
   raw_base_name <- tools::file_path_sans_ext(basename(edf_path))
   if (is.null(xml_path)) {
@@ -120,7 +144,8 @@ create_filtered_edf <- function(edf_path, xml_path = NULL, filter_profile_name =
   cmd <- build_filtered_edf_command(
     filtered_dir = filtered_dir,
     base_name = filtered_name,
-    filter_profile = filter_profile
+    filter_profile = filter_profile,
+    eeg_channels = get_eeg_channels_for_edf(edf_path, drop_channels)
   )
   print(cmd)
   leval(cmd)
