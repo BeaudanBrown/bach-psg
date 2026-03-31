@@ -146,6 +146,7 @@
               lunar
               data_table
               tidyverse
+              cowplot
               here
               Hmisc
               dotenv
