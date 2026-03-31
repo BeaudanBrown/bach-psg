@@ -10,11 +10,14 @@ collect_data_tables <- function(x) {
 }
 
 extract_psd_b_ch <- function(psd_result) {
-  if (is.null(psd_result$psd) || is.null(psd_result$psd$B_CH)) {
-    return(NULL)
+  if (!is.null(psd_result$psd_b_ch)) {
+    out <- copy(as.data.table(psd_result$psd_b_ch[[1]]))
+  } else {
+    if (is.null(psd_result$psd) || is.null(psd_result$psd$B_CH)) {
+      return(NULL)
+    }
+    out <- copy(psd_result$psd$B_CH)
   }
-
-  out <- copy(psd_result$psd$B_CH)
   out$stage <- if (is.null(psd_result$sleep_stage)) {
     NA_character_
   } else {

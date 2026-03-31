@@ -35,8 +35,8 @@ get_psd_results <- function(
   load_edf(filtered_edf_path)
 
   leval(paste0("MASK ifnot=", sleep_stage, " & RE"))
-  result$psd <- leval("PSD spectrum epoch")
-  result$epoch_map <- leval("EPOCH verbose")
+  psd <- leval("PSD spectrum epoch")
+  result$psd_b_ch <- list(extract_luna_table(psd, "B_CH"))
   lrefresh()
   result
 }
