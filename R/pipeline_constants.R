@@ -24,8 +24,8 @@ PIPELINE_MODERATORS <- c(
   "gfap_mean_conc_plasma"
 )
 
-PIPELINE_CHANNEL_EXCLUSIONS <- list(
-  BACH0018 = c("C3_M2"),
-  BACH0243 = c("C4_M1"),
-  BACH0052 = c("C4_M1")
+PIPELINE_CHANNEL_KEEP <- list(
+  BACH0018 = c("F3_M2", "F4_M1", "C4_M1", "O1_M2", "O2_M1"),
+  BACH0243 = c("F3_M2", "F4_M1", "C3_M2", "O1_M2", "O2_M1"),
+  BACH0052 = c("F3_M2", "F4_M1", "C3_M2", "O1_M2", "O2_M1")
 )

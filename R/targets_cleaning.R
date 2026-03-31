@@ -17,7 +17,7 @@ build_cleaning_targets <- function() {
       create_channel_dropped_edf(
         edf_path = raw_edf_inputs$edf_path,
         xml_path = raw_edf_inputs$xml_path,
-        drop_channels = raw_edf_inputs$drop_channels
+        keep_channels = raw_edf_inputs$keep_channels
       ),
       pattern = map(raw_edf_inputs),
       format = "file"

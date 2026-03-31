@@ -18,15 +18,15 @@ build_input_targets <- function() {
       fread(file.path(data_dir, "data_cleaner.v2.csv"))
     ),
     tar_target(
-      channel_exclusions,
-      PIPELINE_CHANNEL_EXCLUSIONS
+      channel_keep,
+      PIPELINE_CHANNEL_KEEP
     ),
     tar_target(
       raw_edf_inputs,
       list(
         edf_path = edf_files,
         xml_path = get_raw_xml_path(edf_files),
-        drop_channels = lookup_channel_exclusions(edf_files, channel_exclusions)
+        keep_channels = lookup_keep_channels(edf_files, channel_keep)
       ),
       pattern = map(edf_files)
     )

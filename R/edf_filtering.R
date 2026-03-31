@@ -13,13 +13,13 @@ get_raw_xml_path <- function(edf_path) {
   candidates[[1]]
 }
 
-lookup_channel_exclusions <- function(edf_path, channel_exclusions = PIPELINE_CHANNEL_EXCLUSIONS) {
+lookup_keep_channels <- function(edf_path, channel_keep = PIPELINE_CHANNEL_KEEP) {
   bach_id <- infer_bach_id(edf_path)
-  if (!length(channel_exclusions)) {
+  if (!length(channel_keep)) {
     return(character())
   }
 
-  matched <- channel_exclusions[[bach_id]]
+  matched <- channel_keep[[bach_id]]
   if (is.null(matched)) {
     return(character())
   }
@@ -27,7 +27,7 @@ lookup_channel_exclusions <- function(edf_path, channel_exclusions = PIPELINE_CH
   unique(unlist(matched, use.names = FALSE))
 }
 
-create_channel_dropped_edf <- function(edf_path, xml_path = NULL, drop_channels = character()) {
+create_channel_dropped_edf <- function(edf_path, xml_path = NULL, keep_channels = character()) {
   raw_base_name <- tools::file_path_sans_ext(basename(edf_path))
   if (is.null(xml_path)) {
     xml_path <- get_raw_xml_path(edf_path)
@@ -45,12 +45,13 @@ create_channel_dropped_edf <- function(edf_path, xml_path = NULL, drop_channels 
   }
 
   ledf(edf_path, raw_base_name, annots = xml_path)
-  signal_drop_step <- if (length(drop_channels)) {
-    sprintf("SIGNALS drop=%s", paste(drop_channels, collapse = ","))
+  signal_keep_step <- if (length(keep_channels)) {
+    sprintf("SIGNALS keep=%s", paste(keep_channels, collapse = ","))
+  } else {
+    "SIGNALS keep=${eeg}"
   }
   commands <- c(
-    "SIGNALS keep=${eeg}",
-    signal_drop_step,
+    signal_keep_step,
     sprintf("WRITE edf-dir=%s edf=%s", dirname(dropped_path), raw_base_name)
   )
   cmd <- paste(commands[nzchar(commands)], collapse = " &\n    ")
