@@ -25,6 +25,9 @@ sync-m3-xml:
 push-m3-edfs:
     rsync -avrz --progress /s/Pase-ED/Studies/BACH_Sleep/edfs/Displayedsignals_inclFiltering/ m3:bc41_scratch2/Spindles/edfs/
 
+push-m3-xml:
+    rsync -avrz --progress /s/Pase-ED/Studies/BACH_Sleep/edfs/Displayedsignals_inclFiltering/*.XML m3:bc41_scratch2/Spindles/edfs/
+
 push-m3:
     rsync -avrz --progress ./_targets/ m3:bc41_scratch2/Spindles/_targets/
 
