@@ -2,8 +2,8 @@ build_qc_targets <- function() {
   list(
     tar_target(
       raw_qc_results,
-      get_raw_qc(edf_files, xml_files),
-      pattern = map(edf_files, xml_files)
+      get_raw_qc(raw_edf_inputs$edf_path, raw_edf_inputs$xml_path),
+      pattern = map(raw_edf_inputs)
     ),
     tar_target(
       raw_qc_dt,

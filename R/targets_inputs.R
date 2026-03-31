@@ -22,8 +22,12 @@ build_input_targets <- function() {
       PIPELINE_CHANNEL_EXCLUSIONS
     ),
     tar_target(
-      edf_channel_exclusions,
-      lookup_channel_exclusions(edf_files, channel_exclusions),
+      raw_edf_inputs,
+      list(
+        edf_path = edf_files,
+        xml_path = get_raw_xml_path(edf_files),
+        drop_channels = lookup_channel_exclusions(edf_files, channel_exclusions)
+      ),
       pattern = map(edf_files)
     )
   )

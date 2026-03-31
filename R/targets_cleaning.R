@@ -15,22 +15,22 @@ build_cleaning_targets <- function() {
     tar_target(
       channel_dropped_edf_files,
       create_channel_dropped_edf(
-        edf_path = edf_files,
-        xml_path = xml_files,
-        drop_channels = edf_channel_exclusions
+        edf_path = raw_edf_inputs$edf_path,
+        xml_path = raw_edf_inputs$xml_path,
+        drop_channels = raw_edf_inputs$drop_channels
       ),
-      pattern = map(edf_files, xml_files, edf_channel_exclusions),
+      pattern = map(raw_edf_inputs),
       format = "file"
     ),
     tar_target(
       filtered_edf_files,
       create_filtered_edf(
         edf_path = channel_dropped_edf_files,
-        xml_path = xml_files,
+        xml_path = raw_edf_inputs$xml_path,
         filter_profile_name = filter_profile_names[filter_profile_index],
         filter_profile = filter_profiles[[filter_profile_index]]
       ),
-      pattern = cross(map(channel_dropped_edf_files, xml_files), filter_profile_index),
+      pattern = cross(map(channel_dropped_edf_files, raw_edf_inputs), filter_profile_index),
       format = "file"
     ),
     tar_target(

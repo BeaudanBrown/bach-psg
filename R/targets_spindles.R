@@ -25,15 +25,15 @@ build_spindle_targets <- function() {
       raw_stage_threshold_results,
       {
         result <- get_raw_stage_spindles_with_threshold(
-          edf_files,
-          xml_files,
+          raw_edf_inputs$edf_path,
+          raw_edf_inputs$xml_path,
           threshold,
           sleep_stage = sleep_stage
         )
         result$sleep_stage <- sleep_stage
         result
       },
-      pattern = cross(map(edf_files, xml_files), sleep_stage)
+      pattern = cross(map(raw_edf_inputs), sleep_stage)
     ),
     tar_target(
       filtered_results,
