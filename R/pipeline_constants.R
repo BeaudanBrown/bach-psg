@@ -42,16 +42,12 @@ PIPELINE_SPINDLE_CHANNELS <- c("C3_M2", "C4_M1", "F3_M2", "F4_M1")
 PIPELINE_SPINDLE_THRESHOLD_CHANNELS <- c("C3_M2", "C4_M1")
 
 PIPELINE_CHANNEL_EXCLUSIONS <- data.table::data.table(
-  bach_id = character(
+  bach_id = c(
     "BACH0018",
-    "BACH0243",
-    "BACH0052",
-    "BACH0012"
+    "BACH0243"
   ),
   drop_channels = list(
     c("C3_M2"),
-    c("C4_M1"),
-    c("C4_M1"),
     c("C4_M1")
   )
 )
