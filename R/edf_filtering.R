@@ -99,10 +99,12 @@ build_filtered_edf_command <- function(
   )
 }
 
-create_filtered_edf <- function(edf_path, filter_profile_name = "base", filter_profile = NULL) {
+create_filtered_edf <- function(edf_path, xml_path = NULL, filter_profile_name = "base", filter_profile = NULL) {
   filtered_dir <- file.path(dirname(edf_path), "filtered", filter_profile_name)
   raw_base_name <- tools::file_path_sans_ext(basename(edf_path))
-  xml_path <- get_raw_xml_path(edf_path)
+  if (is.null(xml_path)) {
+    xml_path <- get_raw_xml_path(edf_path)
+  }
   filtered_name <- paste0(raw_base_name, "_filtered")
   filtered_path <- file.path(filtered_dir, paste0(raw_base_name, "_filtered", ".edf"))
   annot_path <- file.path(filtered_dir, paste0(filtered_name, ".annots"))

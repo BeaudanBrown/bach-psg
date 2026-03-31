@@ -1,9 +1,11 @@
 library(luna)
 library(data.table)
 
-get_raw_input_summary <- function(edf_path) {
+get_raw_input_summary <- function(edf_path, xml_path = NULL) {
   base_name <- tools::file_path_sans_ext(basename(edf_path))
-  xml_path <- get_raw_xml_path(edf_path)
+  if (is.null(xml_path)) {
+    xml_path <- get_raw_xml_path(edf_path)
+  }
 
   ledf(edf_path, base_name, annots = xml_path)
   leval("EPOCH")
@@ -57,11 +59,13 @@ get_raw_input_summary <- function(edf_path) {
   summary
 }
 
-get_raw_qc_data <- function(edf_path) {
+get_raw_qc_data <- function(edf_path, xml_path = NULL) {
   base_name <- tools::file_path_sans_ext(basename(edf_path))
-  xml_path <- paste0(edf_path, ".XML")
+  if (is.null(xml_path)) {
+    xml_path <- get_raw_xml_path(edf_path)
+  }
 
-  ledf(edf_path, base_name, xml_path)
+  ledf(edf_path, base_name, annots = xml_path)
   leval("EPOCH & SIGNALS keep=${eeg}")
 
   epoch_info <- extract_luna_table(

@@ -40,13 +40,19 @@ list(
     }
   ),
   tar_target(
+    xml_files,
+    get_raw_xml_path(edf_files),
+    pattern = map(edf_files),
+    format = "file"
+  ),
+  tar_target(
     redcap_data,
     fread(file.path(data_dir, "data_cleaner.v2.csv"))
   ),
   tar_target(
     raw_input_summary_branch,
-    get_raw_input_summary(edf_files),
-    pattern = map(edf_files)
+    get_raw_input_summary(edf_files, xml_files),
+    pattern = map(edf_files, xml_files)
   ),
   tar_target(
     raw_input_summary,
@@ -71,10 +77,11 @@ list(
     filtered_edf_files,
     create_filtered_edf(
       edf_path = edf_files,
+      xml_path = xml_files,
       filter_profile_name = filter_profile_names[filter_profile_index],
       filter_profile = filter_profiles[[filter_profile_index]]
     ),
-    pattern = cross(edf_files, filter_profile_index),
+    pattern = cross(map(edf_files, xml_files), filter_profile_index),
     format = "file"
   ),
   ##########################
@@ -103,8 +110,8 @@ list(
   ##########################
   tar_target(
     raw_qc,
-    get_raw_qc_data(edf_files),
-    pattern = map(edf_files)
+    get_raw_qc_data(edf_files, xml_files),
+    pattern = map(edf_files, xml_files)
   ),
   tar_target(
     raw_qc_epoch,
@@ -243,13 +250,14 @@ list(
     {
       result <- get_raw_stage_spindles_with_threshold(
         edf_files,
+        xml_files,
         threshold,
         sleep_stage = sleep_stage
       )
       result$sleep_stage <- sleep_stage
       result
     },
-    pattern = cross(edf_files, sleep_stage)
+    pattern = cross(map(edf_files, xml_files), sleep_stage)
   ),
   # Combine spindle and SO data into a data.table with relevant columns
   tar_target(
