@@ -10,6 +10,7 @@ QC_PLOT_METRICS <- c(
 )
 
 QC_PLOT_CHANNELS <- c("C3_M2", "C4_M1", "average_channels")
+QC_PLOT_NEAR_ZERO_THRESHOLD <- 0.02
 
 build_qc_plot_specs <- function() {
   data.table::CJ(
@@ -105,18 +106,32 @@ plot_qc_density <- function(qc_all_dt, metric, channel, data_dir) {
     gsub("_", " ", metric)
   }
 
+  is_near_zero_plot <- max(plot_dt$metric_value, na.rm = TRUE) <= QC_PLOT_NEAR_ZERO_THRESHOLD
+  y_label <- if (is_near_zero_plot) "Scaled density" else "Density"
+
   p <- ggplot2::ggplot(
     plot_dt,
     ggplot2::aes(x = metric_value, colour = filter_profile, fill = filter_profile)
-  ) +
-    ggplot2::geom_density(alpha = 0.18, linewidth = 1) +
+  )
+
+  if (is_near_zero_plot) {
+    p <- p + ggplot2::geom_density(
+      ggplot2::aes(y = ggplot2::after_stat(scaled * 0.08)),
+      alpha = 0.18,
+      linewidth = 1
+    )
+  } else {
+    p <- p + ggplot2::geom_density(alpha = 0.18, linewidth = 1)
+  }
+
+  p <- p +
     ggplot2::scale_colour_manual(values = profile_palette, drop = FALSE, labels = legend_labels) +
     ggplot2::scale_fill_manual(values = profile_palette, drop = FALSE, labels = legend_labels) +
     ggplot2::labs(
       title = sprintf("%s density", x_label),
       subtitle = plot_dt$channel_label[[1]],
       x = x_label,
-      y = "Density",
+      y = y_label,
       colour = legend_title,
       fill = legend_title
     ) +
