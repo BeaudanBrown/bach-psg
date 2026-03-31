@@ -118,22 +118,60 @@ create_filtered_edf <- function(edf_path, filter_profile_name = "base", filter_p
   c(filtered_path, annot_path)
 }
 
-create_filtered_edf_from_spec <- function(edf_path, filter_profile_spec) {
-  if (!is.list(filter_profile_spec)) {
-    stop("filter_profile_spec must be a list")
+normalize_filter_profile_spec <- function(filter_profile_spec) {
+  filter_profile_name <- NULL
+  filter_profile <- NULL
+
+  if (is.list(filter_profile_spec)) {
+    if (!is.null(filter_profile_spec$filter_profile_name)) {
+      filter_profile_name <- filter_profile_spec$filter_profile_name
+    }
+    if (!is.null(filter_profile_spec$filter_profile)) {
+      filter_profile <- filter_profile_spec$filter_profile
+    }
+
+    if (is.null(filter_profile_name) && !is.null(names(filter_profile_spec))) {
+      filter_profile_name <- names(filter_profile_spec)[1]
+    }
+    if (is.null(filter_profile) && length(filter_profile_spec) == 1L) {
+      filter_profile <- filter_profile_spec[[1]]
+    }
+  } else if (is.character(filter_profile_spec)) {
+    filter_profile_name <- filter_profile_spec[[1]]
   }
 
-  if (is.null(filter_profile_spec$filter_profile_name)) {
-    stop("filter_profile_spec$filter_profile_name is required")
+  if (is.null(filter_profile_name) || is.null(filter_profile)) {
+    stop("filter_profile_spec must include a filter profile name and profile")
   }
-  if (is.null(filter_profile_spec$filter_profile)) {
-    stop("filter_profile_spec$filter_profile is required")
+
+  list(
+    filter_profile_name = as.character(filter_profile_name[[1]]),
+    filter_profile = filter_profile
+  )
+}
+
+create_filtered_edf_from_spec <- function(edf_path, filter_profile_spec, filter_profiles = PIPELINE_FILTER_PROFILES) {
+  normalized <- normalize_filter_profile_spec(filter_profile_spec)
+
+  if (!is.null(filter_profiles) &&
+    is.list(filter_profiles) &&
+    is.null(normalized$filter_profile)) {
+    normalized$filter_profile <- filter_profiles[[normalized$filter_profile_name]]
+  }
+
+  if (is.null(normalized$filter_profile)) {
+    stop(
+      sprintf(
+        "No filter profile available for '%s'",
+        normalized$filter_profile_name
+      )
+    )
   }
 
   create_filtered_edf(
     edf_path = edf_path,
-    filter_profile_name = filter_profile_spec$filter_profile_name,
-    filter_profile = filter_profile_spec$filter_profile
+    filter_profile_name = normalized$filter_profile_name,
+    filter_profile = normalized$filter_profile
   )
 }
 
