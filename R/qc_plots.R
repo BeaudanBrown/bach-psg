@@ -139,9 +139,13 @@ plot_qc_density <- function(qc_all_dt, metric, channel, data_dir) {
     ggplot2::theme(
       legend.position = "top",
       plot.title = ggplot2::element_text(face = "bold"),
-      axis.title = ggplot2::element_text(face = "bold")
+      axis.title = ggplot2::element_text(face = "bold"),
+      plot.background = ggplot2::element_rect(fill = "white", colour = NA),
+      panel.background = ggplot2::element_rect(fill = "white", colour = NA),
+      legend.background = ggplot2::element_rect(fill = "white", colour = NA),
+      legend.key = ggplot2::element_rect(fill = "white", colour = NA)
     )
 
-  ggplot2::ggsave(path, plot = p, width = 9, height = 6, dpi = 200)
+  ggplot2::ggsave(path, plot = p, width = 9, height = 6, dpi = 200, bg = "white")
   path
 }
