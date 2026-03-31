@@ -48,19 +48,7 @@ list(
   ##########################
   tar_target(
     filter_profiles,
-    list(
-      base = list(
-      ),
-      bandpass_0_3_35 = list(
-        filter_commands = "FILTER bandpass=0.3,35"
-      ),
-      notch_50 = list(
-        filter_commands = "FILTER notch=50"
-      ),
-      bandpass_0_3_35_notch_50 = list(
-        filter_commands = c("FILTER bandpass=0.3,35", "FILTER notch=50")
-      )
-    )
+    PIPELINE_FILTER_PROFILES
   ),
   tar_target(
     filter_profile_names,
@@ -117,17 +105,11 @@ list(
   ),
   tar_target(
     qc_epoch_dt,
-    rbindlist(
-      collect_tables(raw_qc_epoch),
-      fill = TRUE
-    )
+    collect_data_tables(raw_qc_epoch)
   ),
   tar_target(
     qc_channel_dt,
-    rbindlist(
-      collect_tables(raw_qc_channel),
-      fill = TRUE
-    )
+    collect_data_tables(raw_qc_channel)
   ),
   tar_target(
     qc_summary,
@@ -163,44 +145,38 @@ list(
   ),
   tar_target(
     line_noise_summary,
-    rbindlist(
-      collect_tables(line_noise_summary_branch),
-      fill = TRUE
-    )
+    collect_data_tables(line_noise_summary_branch)
   ),
   tar_target(
     line_noise_spectra,
-    rbindlist(
-      collect_tables(line_noise_spectra_branch),
-      fill = TRUE
-    )
+    collect_data_tables(line_noise_spectra_branch)
   ),
   ##########################
   # Branching constants
   ##########################
   tar_target(
     sleep_stage,
-    c("N2", "N3")
+    PIPELINE_SLEEP_STAGES
   ),
   tar_target(
     freqs,
-    c(11, 15)
+    PIPELINE_SPINDLE_FREQS
   ),
   tar_target(
     channels,
-    c("C3", "C4")
+    PIPELINE_CHANNEL_PREFIXES
   ),
   tar_target(
     outcomes,
-    c("visualrepro2_total", "logicalmem_delay_total")
+    PIPELINE_OUTCOMES
   ),
   tar_target(
     predictors,
-    c("overlap", "angle", "mag")
+    PIPELINE_PREDICTORS
   ),
   tar_target(
     moderators,
-    c("ab4240ratio_plasma", "ptau217_mean_conc_plasma", "gfap_mean_conc_plasma")
+    PIPELINE_MODERATORS
   ),
   ##########################
   # Analysis pipeline
@@ -334,24 +310,15 @@ list(
   ),
   tar_target(
     cleaned_spindle_epoch_dt,
-    rbindlist(
-      collect_tables(cleaned_spindle_epochs),
-      fill = TRUE
-    )
+    collect_data_tables(cleaned_spindle_epochs)
   ),
   tar_target(
     raw_spindle_epoch_dt,
-    rbindlist(
-      collect_tables(raw_spindle_epochs),
-      fill = TRUE
-    )
+    collect_data_tables(raw_spindle_epochs)
   ),
   tar_target(
     raw_spindle_qc_dt,
-    rbindlist(
-      collect_tables(raw_spindle_qc),
-      fill = TRUE
-    )
+    collect_data_tables(raw_spindle_qc)
   ),
   tar_target(
     raw_spindle_qc_summary,
@@ -369,25 +336,7 @@ list(
   tar_target(
     psd_dt,
     {
-      rbindlist(
-        lapply(
-          collect_tables(psd_results),
-          function(ppt_result) {
-            if (is.null(ppt_result$psd) || is.null(ppt_result$psd$B_CH)) {
-              return(NULL)
-            }
-            out <- copy(ppt_result$psd$B_CH)
-            out$stage <- if (is.null(ppt_result$sleep_stage)) {
-              NA_character_
-            } else {
-              ppt_result$sleep_stage
-            }
-            out$filter_profile <- ppt_result$filter_profile
-            out
-          }
-        ),
-        fill = TRUE
-      )
+      collect_psd_b_ch(psd_results)
     }
   ),
   tar_target(
@@ -403,15 +352,7 @@ list(
     qc_csv,
     {
       path <- file.path(data_dir, "qc_dt.csv")
-      qc_dt <- rbindlist(
-        lapply(seq_len(nrow(qc_results)), function(i) {
-          dt <- as.data.table(qc_results$psd[[i]]$CH_EEG)
-          dt[, bach_id := qc_results$bach_id[i]]
-          dt[, filter_profile := qc_results$filter_profile[i]]
-          dt
-        }),
-        fill = TRUE
-      )
+      qc_dt <- build_qc_csv_rows(qc_results)
       fwrite(qc_dt, path)
       path
     },

@@ -1,0 +1,60 @@
+library(data.table)
+
+collect_data_tables <- function(x) {
+  bind_rows <- collect_tables(x)
+  if (!length(bind_rows)) {
+    return(data.table())
+  }
+
+  rbindlist(bind_rows, fill = TRUE)
+}
+
+extract_psd_b_ch <- function(psd_result) {
+  if (is.null(psd_result$psd) || is.null(psd_result$psd$B_CH)) {
+    return(NULL)
+  }
+
+  out <- copy(psd_result$psd$B_CH)
+  out$stage <- if (is.null(psd_result$sleep_stage)) {
+    NA_character_
+  } else {
+    psd_result$sleep_stage
+  }
+  out$filter_profile <- psd_result$filter_profile
+  out
+}
+
+collect_psd_b_ch <- function(psd_results) {
+  psd_tables <- lapply(
+    collect_tables(psd_results),
+    extract_psd_b_ch
+  )
+  psd_tables <- Filter(Negate(is.null), psd_tables)
+  if (!length(psd_tables)) {
+    return(data.table())
+  }
+
+  rbindlist(psd_tables, fill = TRUE)
+}
+
+build_qc_csv_rows <- function(qc_results) {
+  if (!nrow(qc_results)) {
+    return(data.table())
+  }
+
+  qc_rows <- lapply(seq_len(nrow(qc_results)), function(i) {
+      if (is.null(qc_results$psd[[i]]$CH_EEG)) {
+        return(NULL)
+      }
+      dt <- as.data.table(qc_results$psd[[i]]$CH_EEG)
+      dt[, bach_id := qc_results$bach_id[i]]
+      dt[, filter_profile := qc_results$filter_profile[i]]
+      dt
+    })
+  qc_rows <- Filter(Negate(is.null), qc_rows)
+  if (!length(qc_rows)) {
+    return(data.table())
+  }
+
+  rbindlist(qc_rows, fill = TRUE)
+}
