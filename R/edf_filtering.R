@@ -1,5 +1,19 @@
 library(luna)
 
+build_filter_profile_specs <- function(filter_profiles) {
+  if (!is.list(filter_profiles) || is.null(names(filter_profiles))) {
+    stop("filter_profiles must be a named list")
+  }
+
+  specs <- lapply(names(filter_profiles), function(filter_profile_name) {
+    list(
+      filter_profile_name = filter_profile_name,
+      filter_profile = filter_profiles[[filter_profile_name]]
+    )
+  })
+  setNames(specs, names(filter_profiles))
+}
+
 build_filtered_edf_command <- function(
   filtered_dir,
   base_name,
@@ -102,6 +116,25 @@ create_filtered_edf <- function(edf_path, filter_profile_name = "base", filter_p
 
   # Return both files so targets tracks them
   c(filtered_path, annot_path)
+}
+
+create_filtered_edf_from_spec <- function(edf_path, filter_profile_spec) {
+  if (!is.list(filter_profile_spec)) {
+    stop("filter_profile_spec must be a list")
+  }
+
+  if (is.null(filter_profile_spec$filter_profile_name)) {
+    stop("filter_profile_spec$filter_profile_name is required")
+  }
+  if (is.null(filter_profile_spec$filter_profile)) {
+    stop("filter_profile_spec$filter_profile is required")
+  }
+
+  create_filtered_edf(
+    edf_path = edf_path,
+    filter_profile_name = filter_profile_spec$filter_profile_name,
+    filter_profile = filter_profile_spec$filter_profile
+  )
 }
 
 load_edf <- function(edf_path, xml_path = NULL) {

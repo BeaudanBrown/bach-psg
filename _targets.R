@@ -51,17 +51,16 @@ list(
     PIPELINE_FILTER_PROFILES
   ),
   tar_target(
-    filter_profile_names,
-    names(filter_profiles)
+    filter_profile_specs,
+    build_filter_profile_specs(filter_profiles)
   ),
   tar_target(
     filtered_edf_files,
-    create_filtered_edf(
+    create_filtered_edf_from_spec(
       edf_files,
-      filter_profile_name = filter_profile_names,
-      filter_profile = filter_profiles[[filter_profile_names]]
+      filter_profile_specs
     ),
-    pattern = cross(edf_files, filter_profile_names),
+    pattern = cross(edf_files, filter_profile_specs),
     format = "file"
   ),
   ##########################
