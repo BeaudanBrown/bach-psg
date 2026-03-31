@@ -43,6 +43,15 @@ list(
     redcap_data,
     fread(file.path(data_dir, "data_cleaner.v2.csv"))
   ),
+  tar_target(
+    raw_input_summary_branch,
+    get_raw_input_summary(edf_files),
+    pattern = map(edf_files)
+  ),
+  tar_target(
+    raw_input_summary,
+    collect_data_tables(raw_input_summary_branch)
+  ),
   ##########################
   # Filtered EDFs (artifact-cleaned)
   ##########################
