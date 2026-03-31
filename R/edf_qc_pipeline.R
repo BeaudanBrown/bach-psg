@@ -10,7 +10,8 @@ get_raw_qc <- function(edf_path, xml_path = NULL) {
   )
 
   ledf(edf_path, base_name, annots = xml_path)
-  result$qc <- leval("QC eeg=C3_M2,C4_M1 epoch")
+  qc <- leval("QC eeg=C3_M2,C4_M1 epoch")
+  result$qc <- list(extract_luna_table(qc, "CH_EEG"))
   lrefresh()
   result
 }
