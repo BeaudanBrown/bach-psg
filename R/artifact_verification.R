@@ -1,8 +1,8 @@
 library(luna)
 library(data.table)
 
-artifact_variant_dir <- function(base_dir, include_artifact_re) {
-  file.path(base_dir, if (include_artifact_re) "with_re" else "current")
+artifact_variant_dir <- function(base_dir, variant = "with_re") {
+  file.path(base_dir, variant)
 }
 
 validate_edf_pair <- function(edf_path) {
@@ -37,12 +37,12 @@ validate_edf_pair <- function(edf_path) {
 write_filtered_edf_variant <- function(
   edf_path,
   base_dir = file.path(tempdir(), "luna-artifact-verification"),
-  include_artifact_re = FALSE,
+  variant = "with_re",
   force = FALSE
 ) {
   base_name <- tools::file_path_sans_ext(basename(edf_path))
   xml_path <- paste0(edf_path, ".XML")
-  variant_dir <- artifact_variant_dir(base_dir, include_artifact_re)
+  variant_dir <- artifact_variant_dir(base_dir, variant)
   filtered_path <- file.path(variant_dir, paste0(base_name, ".edf"))
   annot_path <- file.path(variant_dir, paste0(base_name, ".annots"))
 
@@ -56,8 +56,7 @@ write_filtered_edf_variant <- function(
     ledf(edf_path, base_name, xml_path)
     leval(build_filtered_edf_command(
       filtered_dir = variant_dir,
-      base_name = base_name,
-      include_artifact_re = include_artifact_re
+      base_name = base_name
     ))
     lrefresh()
   }
@@ -141,16 +140,10 @@ compare_artifact_variants <- function(
   current_path <- write_filtered_edf_variant(
     edf_path = edf_path,
     base_dir = base_dir,
-    include_artifact_re = FALSE,
+    variant = "with_re",
     force = force
   )
-  re_path <- write_filtered_edf_variant(
-    edf_path = edf_path,
-    base_dir = base_dir,
-    include_artifact_re = TRUE,
-    force = force
-  )
-
+  re_path <- current_path
   current_all_epochs <- inspect_epoch_state(current_path, xml_path)
   re_all_epochs <- inspect_epoch_state(re_path, xml_path)
   current_stage_epochs <- inspect_epoch_state(current_path, xml_path, stage_mask = sleep_stage)
