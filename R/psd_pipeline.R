@@ -14,7 +14,8 @@ get_qc <- function(
   )
   load_edf(filtered_edf_path)
 
-  result$psd <- leval("QC eeg=C3_M2,C4_M1 epoch")
+  qc <- leval("QC eeg=C3_M2,C4_M1 epoch")
+  result$qc_ch_eeg <- list(extract_luna_table(qc, "CH_EEG"))
   lrefresh()
   result
 }

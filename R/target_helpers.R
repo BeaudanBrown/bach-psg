@@ -55,10 +55,14 @@ build_qc_csv_rows <- function(qc_results) {
   }
 
   qc_rows <- lapply(seq_len(nrow(qc_results)), function(i) {
-      if (is.null(qc_results$psd[[i]]$CH_EEG)) {
-        return(NULL)
+      if (!is.null(qc_results$qc_ch_eeg[[i]])) {
+        dt <- as.data.table(qc_results$qc_ch_eeg[[i]])
+      } else {
+        if (is.null(qc_results$psd[[i]]$CH_EEG)) {
+          return(NULL)
+        }
+        dt <- as.data.table(qc_results$psd[[i]]$CH_EEG)
       }
-      dt <- as.data.table(qc_results$psd[[i]]$CH_EEG)
       dt[, bach_id := qc_results$bach_id[i]]
       dt[, filter_profile := qc_results$filter_profile[i]]
       dt
