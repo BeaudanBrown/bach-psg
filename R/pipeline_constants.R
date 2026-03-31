@@ -7,6 +7,8 @@ PIPELINE_REDUCED_QC_COMMANDS <- c(
 )
 
 PIPELINE_FILTER_PROFILES <- list(
+  unfiltered = list(
+  ),
   original = list(
     qc_commands = PIPELINE_REDUCED_QC_COMMANDS
   ),

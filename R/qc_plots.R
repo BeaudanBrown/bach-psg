@@ -95,6 +95,7 @@ plot_qc_density <- function(qc_all_dt, metric, channel, data_dir) {
   plot_dt[, filter_profile := factor(filter_profile, levels = profile_levels)]
 
   profile_palette <- c(
+    unfiltered = "#8D99AE",
     original = "#6C757D",
     base = "#1B4965",
     bandpass_0_3_35 = "#CA6702",
