@@ -13,8 +13,7 @@ PIPELINE_FILTER_PROFILES <- list(
       "SIGSTATS",
       "CHEP-MASK ep-th=3,3,3",
       "CHEP epoch",
-      "DUMP-MASK annot=artifacts",
-      "QC eeg=C3_M2,C4_M1"
+      "DUMP-MASK annot=artifacts"
     )
   ),
   base = list(
@@ -26,8 +25,7 @@ PIPELINE_FILTER_PROFILES <- list(
       "SIGSTATS",
       "CHEP-MASK ep-th=3,3,3 max=200,0.05 clipped=0.05 flat=0.05",
       "CHEP epoch",
-      "DUMP-MASK annot=artifacts",
-      "QC eeg=C3_M2,C4_M1"
+      "DUMP-MASK annot=artifacts"
     )
   ),
   bandpass_0_3_35 = list(
@@ -40,8 +38,7 @@ PIPELINE_FILTER_PROFILES <- list(
       "SIGSTATS",
       "CHEP-MASK ep-th=3,3,3 max=200,0.05 clipped=0.05 flat=0.05",
       "CHEP epoch",
-      "DUMP-MASK annot=artifacts",
-      "QC eeg=C3_M2,C4_M1"
+      "DUMP-MASK annot=artifacts"
     )
   ),
   notch_50 = list(
@@ -54,8 +51,7 @@ PIPELINE_FILTER_PROFILES <- list(
       "SIGSTATS",
       "CHEP-MASK ep-th=3,3,3 max=200,0.05 clipped=0.05 flat=0.05",
       "CHEP epoch",
-      "DUMP-MASK annot=artifacts",
-      "QC eeg=C3_M2,C4_M1"
+      "DUMP-MASK annot=artifacts"
     )
   )
 )
