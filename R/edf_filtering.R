@@ -32,19 +32,14 @@ lookup_channel_exclusions <- function(edf_path, channel_exclusions = PIPELINE_CH
 build_filtered_edf_command <- function(
   filtered_dir,
   base_name,
-  filter_profile = NULL,
-  drop_channels = character()
+  filter_profile = NULL
 ) {
   filter_commands <- filter_profile$filter_commands %||% character()
-  signal_drop_step <- if (length(drop_channels)) {
-    sprintf("SIGNALS drop=%s", paste(drop_channels, collapse = ","))
-  }
 
   commands <- c(
     "EPOCH",
     "SUPPRESS-ECG ecg=ECG",
     "SIGNALS keep=${eeg}",
-    signal_drop_step,
     "MASK clear",
     "EDGER sig=${eeg} epoch mask",
     filter_commands,
@@ -61,8 +56,47 @@ build_filtered_edf_command <- function(
   paste(commands[nzchar(commands)], collapse = " &\n    ")
 }
 
-create_filtered_edf <- function(edf_path, xml_path = NULL, filter_profile_name = "base", filter_profile = NULL, drop_channels = character()) {
-  filtered_dir <- file.path(dirname(edf_path), "filtered", filter_profile_name)
+build_channel_drop_edf_command <- function(base_name, drop_channels = character()) {
+  signal_drop_step <- if (length(drop_channels)) {
+    sprintf("SIGNALS drop=%s", paste(drop_channels, collapse = ","))
+  }
+
+  commands <- c(
+    "SIGNALS keep=${eeg}",
+    signal_drop_step,
+    sprintf("WRITE edf-dir=%s edf=%s", dirname(base_name), basename(base_name))
+  )
+
+  paste(commands[nzchar(commands)], collapse = " &\n    ")
+}
+
+create_channel_dropped_edf <- function(edf_path, xml_path = NULL, drop_channels = character()) {
+  raw_base_name <- tools::file_path_sans_ext(basename(edf_path))
+  if (is.null(xml_path)) {
+    xml_path <- get_raw_xml_path(edf_path)
+  }
+
+  channel_drop_dir <- file.path(get_raw_edf_dir(edf_path), "channel_dropped")
+  dropped_path <- file.path(channel_drop_dir, paste0(raw_base_name, ".edf"))
+
+  if (!dir.exists(channel_drop_dir)) {
+    dir.create(channel_drop_dir, recursive = TRUE)
+  }
+
+  ledf(edf_path, raw_base_name, annots = xml_path)
+  cmd <- build_channel_drop_edf_command(
+    base_name = dropped_path,
+    drop_channels = drop_channels
+  )
+  print(cmd)
+  leval(cmd)
+  lrefresh()
+
+  dropped_path
+}
+
+create_filtered_edf <- function(edf_path, xml_path = NULL, filter_profile_name = "base", filter_profile = NULL) {
+  filtered_dir <- file.path(get_raw_edf_dir(edf_path), "filtered", filter_profile_name)
   raw_base_name <- tools::file_path_sans_ext(basename(edf_path))
   if (is.null(xml_path)) {
     xml_path <- get_raw_xml_path(edf_path)
@@ -79,8 +113,7 @@ create_filtered_edf <- function(edf_path, xml_path = NULL, filter_profile_name =
   cmd <- build_filtered_edf_command(
     filtered_dir = filtered_dir,
     base_name = filtered_name,
-    filter_profile = filter_profile,
-    drop_channels = drop_channels
+    filter_profile = filter_profile
   )
   print(cmd)
   leval(cmd)
@@ -95,11 +128,7 @@ load_edf <- function(edf_path, xml_path = NULL) {
   if (is.null(xml_path)) {
     # Assume XML is named like the original EDF (not the filtered one)
     # For filtered EDFs, the XML is still with the original
-    raw_edf_dir <- if (grepl("/filtered", dirname(edf_path), perl = TRUE)) {
-      sub("/filtered(?:/[^/]+)?$", "", dirname(edf_path), perl = TRUE)
-    } else {
-      dirname(edf_path)
-    }
+    raw_edf_dir <- get_raw_edf_dir(edf_path)
     raw_base_name <- infer_bach_id(edf_path)
     raw_edf_path <- file.path(raw_edf_dir, paste0(raw_base_name, ".edf"))
     xml_path <- get_raw_xml_path(raw_edf_path)
