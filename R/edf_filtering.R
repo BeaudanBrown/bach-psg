@@ -83,27 +83,30 @@ create_filtered_edf <- function(edf_path, xml_path = NULL, filter_profile_name =
     unlink(annot_path, force = TRUE)
   }
 
-  if (identical(filter_profile_name, "unfiltered")) {
-    file.copy(edf_path, filtered_path, overwrite = TRUE)
-    return(filtered_path)
-  }
-
   ledf(edf_path, raw_base_name, annots = xml_path)
-  filter_commands <- filter_profile$filter_commands %||% character()
-  commands <- c(
-    "EPOCH",
-    "SUPPRESS-ECG ecg=ECG",
-    "EDGER sig=* epoch mask",
-    filter_commands,
-    "ARTIFACTS",
-    "SIGSTATS",
-    PIPELINE_DEFAULT_QC_COMMANDS,
-    "CHEP epoch",
-    "DUMP-MASK annot=artifacts",
-    "QC eeg=C3_M2,C4_M1",
-    sprintf("WRITE-ANNOTS file=%s/%s.annots annot=artifacts", filtered_dir, filtered_name),
-    sprintf("WRITE edf-dir=%s edf=%s", filtered_dir, filtered_name)
-  )
+  if (identical(filter_profile_name, "unfiltered")) {
+    commands <- c(
+      "EPOCH",
+      sprintf("WRITE-ANNOTS file=%s/%s.annots annot=artifacts", filtered_dir, filtered_name),
+      sprintf("WRITE edf-dir=%s edf=%s", filtered_dir, filtered_name)
+    )
+  } else {
+    filter_commands <- filter_profile$filter_commands %||% character()
+    commands <- c(
+      "EPOCH",
+      "SUPPRESS-ECG ecg=ECG",
+      "EDGER sig=* epoch mask",
+      filter_commands,
+      "ARTIFACTS",
+      "SIGSTATS",
+      PIPELINE_DEFAULT_QC_COMMANDS,
+      "CHEP epoch",
+      "DUMP-MASK annot=artifacts",
+      "QC eeg=C3_M2,C4_M1",
+      sprintf("WRITE-ANNOTS file=%s/%s.annots annot=artifacts", filtered_dir, filtered_name),
+      sprintf("WRITE edf-dir=%s edf=%s", filtered_dir, filtered_name)
+    )
+  }
   cmd <- paste(commands[nzchar(commands)], collapse = " &\n    ")
   print(cmd)
   leval(cmd)
