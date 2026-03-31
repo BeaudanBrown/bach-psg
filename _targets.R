@@ -18,7 +18,10 @@ Sys.setenv(OPENBLAS_NUM_THREADS = 1)
 tar_option_set(
   packages = c(
     "luna",
-    "data.table"
+    "data.table",
+    "ggplot2",
+    "cowplot",
+    "grid"
   ),
   controller = crew_controller_local(
     workers = ncpus
@@ -38,14 +41,3 @@ list(
   build_analysis_targets(),
   build_export_targets()
 ) |> unlist(recursive = FALSE)
-# combined sig model results into one data.table
-#     tar_target(
-#       model_dts,
-#       c("N2_filtered", "N23_filtered")
-#     ),
-#     tar_target(
-#       sig_model_results,
-#       get_dt_sig_results(model_dts)
-#     )
-#   )
-# )

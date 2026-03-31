@@ -28,6 +28,10 @@ build_qc_targets <- function() {
         }
       },
       pattern = map(filter_profile_names)
+    ),
+    tar_target(
+      qc_plot_specs,
+      build_qc_plot_specs()
     )
   )
 }
