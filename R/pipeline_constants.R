@@ -10,12 +10,6 @@ PIPELINE_FILTER_PROFILES <- list(
   ),
   notch_50 = list(
     filter_commands = "FILTER bandstop=49,51 ripple=0.02 tw=1"
-  ),
-  bandpass_0_3_35_notch_50 = list(
-    filter_commands = c(
-      "FILTER bandpass=0.3,35 ripple=0.02 tw=1",
-      "FILTER bandstop=49,51 ripple=0.02 tw=1"
-    )
   )
 )
 
