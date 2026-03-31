@@ -89,19 +89,20 @@ build_filtered_edf_command <- function(
   } else {
     ""
   }
-  signal_command <- if (length(drop_channels)) {
+  signal_drop_step <- if (length(drop_channels)) {
     sprintf(
-      "SIGNALS keep=${eeg} drop=%s",
+      "SIGNALS drop=%s &",
       paste(drop_channels, collapse = ",")
     )
   } else {
-    "SIGNALS keep=${eeg}"
+    ""
   }
 
   sprintf(
     "EPOCH &
     SUPPRESS-ECG ecg=ECG &
-    %s &
+    SIGNALS keep=${eeg} &
+    %s
     MASK clear &
     EDGER sig=${eeg} epoch mask &
     %s
@@ -113,7 +114,7 @@ build_filtered_edf_command <- function(
     QC eeg=C3_M2,C4_M1 &
     WRITE-ANNOTS file=%s/%s.annots annot=artifacts &
     WRITE edf-dir=%s edf=%s",
-    signal_command,
+    signal_drop_step,
     pre_artifact_filter_step,
     qc_chain,
     filtered_dir,
