@@ -1,4 +1,4 @@
-PIPELINE_DEFAULT_FILTER_COMMANDS <- c(
+PIPELINE_DEFAULT_QC_COMMANDS <- c(
   "CHEP-MASK ep-th=3,3,3 max=200,0.05 clipped=0.05 flat=0.05"
 )
 
@@ -6,13 +6,16 @@ PIPELINE_FILTER_PROFILES <- list(
   base = list(
   ),
   bandpass_0_3_35 = list(
-    filter_commands = "FILTER bandpass=0.3,35"
+    filter_commands = "FILTER bandpass=0.3,35 ripple=0.02 tw=1"
   ),
   notch_50 = list(
-    filter_commands = "FILTER notch=50"
+    filter_commands = "FILTER bandstop=49,51 ripple=0.02 tw=1"
   ),
   bandpass_0_3_35_notch_50 = list(
-    filter_commands = c("FILTER bandpass=0.3,35", "FILTER notch=50")
+    filter_commands = c(
+      "FILTER bandpass=0.3,35 ripple=0.02 tw=1",
+      "FILTER bandstop=49,51 ripple=0.02 tw=1"
+    )
   )
 )
 

@@ -6,7 +6,8 @@ build_filtered_edf_command <- function(
   filter_profile = NULL
 ) {
   profile <- list(
-    filter_commands = PIPELINE_DEFAULT_FILTER_COMMANDS
+    filter_commands = character(),
+    qc_commands = PIPELINE_DEFAULT_QC_COMMANDS
   )
 
   if (!is.null(filter_profile)) {
@@ -46,18 +47,27 @@ build_filtered_edf_command <- function(
     character(1),
     USE.NAMES = FALSE
   )
-  if (!length(filter_commands)) {
-    filter_commands <- PIPELINE_DEFAULT_FILTER_COMMANDS
-  }
+  qc_commands <- vapply(
+    profile$qc_commands,
+    as.character,
+    character(1),
+    USE.NAMES = FALSE
+  )
 
-  # Keep filters first, then keep annotation/qc export unchanged.
   filter_chain <- paste(filter_commands, collapse = " & ")
+  qc_chain <- paste(qc_commands, collapse = " & ")
+  pre_artifact_filter_step <- if (length(filter_commands)) {
+    paste0(filter_chain, " &")
+  } else {
+    ""
+  }
 
   sprintf(
     "EPOCH &
     SUPPRESS-ECG ecg=ECG &
     SIGNALS keep=${eeg} &
     EDGER sig=${eeg} epoch mask &
+    %s
     ARTIFACTS &
     SIGSTATS &
     %s &
@@ -66,7 +76,8 @@ build_filtered_edf_command <- function(
     QC eeg=C3_M2,C4_M1 &
     WRITE-ANNOTS file=%s/%s.annots &
     WRITE edf-dir=%s edf=%s",
-    filter_chain,
+    pre_artifact_filter_step,
+    qc_chain,
     artifact_re,
     filtered_dir,
     base_name,
