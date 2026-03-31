@@ -40,6 +40,10 @@ create_channel_dropped_edf <- function(edf_path, xml_path = NULL, drop_channels 
     dir.create(channel_drop_dir, recursive = TRUE)
   }
 
+  if (file.exists(dropped_path)) {
+    unlink(dropped_path, force = TRUE)
+  }
+
   ledf(edf_path, raw_base_name, annots = xml_path)
   signal_drop_step <- if (length(drop_channels)) {
     sprintf("SIGNALS drop=%s", paste(drop_channels, collapse = ","))
@@ -69,6 +73,13 @@ create_filtered_edf <- function(edf_path, xml_path = NULL, filter_profile_name =
 
   if (!dir.exists(filtered_dir)) {
     dir.create(filtered_dir, recursive = TRUE)
+  }
+
+  if (file.exists(filtered_path)) {
+    unlink(filtered_path, force = TRUE)
+  }
+  if (file.exists(annot_path)) {
+    unlink(annot_path, force = TRUE)
   }
 
   ledf(edf_path, raw_base_name, annots = xml_path)
