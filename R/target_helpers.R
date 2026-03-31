@@ -21,9 +21,12 @@ extract_psd_b_ch <- function(psd_result) {
   out$stage <- if (is.null(psd_result$sleep_stage)) {
     NA_character_
   } else {
-    psd_result$sleep_stage
+    psd_result$sleep_stage[[1]]
   }
-  out$filter_profile <- psd_result$filter_profile
+  out$filter_profile <- psd_result$filter_profile[[1]]
+  if (!is.null(psd_result$bach_id)) {
+    out$bach_id <- psd_result$bach_id[[1]]
+  }
   out
 }
 
