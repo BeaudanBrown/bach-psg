@@ -23,7 +23,6 @@ get_raw_input_summary <- function(edf_path, xml_path = NULL) {
     0L
   }
 
-  leval("MASK clear")
   stage_epochs <- extract_luna_table(
     leval("STAGE"),
     "E",
