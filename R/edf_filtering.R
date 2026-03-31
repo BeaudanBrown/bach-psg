@@ -47,7 +47,7 @@ create_channel_dropped_edf <- function(edf_path, xml_path = NULL, drop_channels 
   commands <- c(
     "SIGNALS keep=${eeg}",
     signal_drop_step,
-    sprintf("WRITE edf-dir=%s edf=%s", dirname(dropped_path), basename(dropped_path))
+    sprintf("WRITE edf-dir=%s edf=%s", dirname(dropped_path), raw_base_name)
   )
   cmd <- paste(commands[nzchar(commands)], collapse = " &\n    ")
   print(cmd)
