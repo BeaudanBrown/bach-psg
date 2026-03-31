@@ -1,5 +1,3 @@
-library(data.table)
-
 extract_luna_table <- function(result, table_name, cols = NULL) {
   if (length(result) == 0 || is.null(result[[1]]) || is.null(result[[1]][[table_name]])) {
     dt <- data.table()

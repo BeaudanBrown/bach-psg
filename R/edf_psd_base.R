@@ -1,6 +1,3 @@
-library(luna)
-library(data.table)
-
 process_edf <- function(filtered_edf_paths) {
   # filtered_edf_paths may contain both .edf and .annots paths
   # Extract just the .edf file

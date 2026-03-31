@@ -1,5 +1,3 @@
-library(data.table)
-
 # Spindle+SO post-processing for thresholded detections
 filter_spindles_so <- function(threshold_results) {
   ensure_cols <- function(x, cols) {

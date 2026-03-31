@@ -1,5 +1,3 @@
-library(data.table)
-
 collect_data_tables <- function(x) {
   bind_rows <- collect_tables(x)
   if (!length(bind_rows)) {

@@ -1,5 +1,3 @@
-library(data.table)
-
 get_qc <- function(
   filtered_edf_paths
 ) {

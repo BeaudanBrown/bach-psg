@@ -1,5 +1,3 @@
-library(luna)
-
 get_raw_xml_path <- function(edf_path) {
   candidates <- c(
     paste0(edf_path, ".XML"),

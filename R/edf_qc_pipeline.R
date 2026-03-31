@@ -1,6 +1,3 @@
-library(luna)
-library(data.table)
-
 get_raw_qc <- function(edf_path, xml_path = NULL) {
   base_name <- tools::file_path_sans_ext(basename(edf_path))
   if (is.null(xml_path)) {

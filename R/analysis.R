@@ -1,5 +1,3 @@
-library(data.table)
-
 get_model_estimate <- function(df, outcome, predictor) {
   formula_str <- paste0(
     outcome,
