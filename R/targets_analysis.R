@@ -37,6 +37,6 @@ build_analysis_targets <- function() {
     tar_target(
       significant_model_results,
       model_summary[`Pr(>|t|)` < .05, ]
-    ),
+    )
   )
 }
