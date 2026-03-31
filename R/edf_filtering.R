@@ -76,8 +76,7 @@ create_filtered_edf <- function(edf_path, xml_path = NULL, filter_profile_name =
   commands <- c(
     "EPOCH",
     "SUPPRESS-ECG ecg=ECG",
-    "SIGNALS keep=${eeg}",
-    "EDGER sig=${eeg} epoch mask",
+    "EDGER sig=* epoch mask",
     filter_commands,
     "ARTIFACTS",
     "SIGSTATS",
