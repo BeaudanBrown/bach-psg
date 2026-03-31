@@ -1,24 +1,62 @@
-PIPELINE_DEFAULT_QC_COMMANDS <- c(
-  "CHEP-MASK ep-th=3,3,3 max=200,0.05 clipped=0.05 flat=0.05"
-)
-
-PIPELINE_REDUCED_QC_COMMANDS <- c(
-  "CHEP-MASK ep-th=3,3,3"
-)
-
 PIPELINE_FILTER_PROFILES <- list(
   unfiltered = list(
+    commands = c(
+      "EPOCH"
+    )
   ),
   original = list(
-    qc_commands = PIPELINE_REDUCED_QC_COMMANDS
+    commands = c(
+      "EPOCH",
+      "SUPPRESS-ECG ecg=ECG",
+      "EDGER sig=* epoch mask",
+      "ARTIFACTS",
+      "SIGSTATS",
+      "CHEP-MASK ep-th=3,3,3",
+      "CHEP epoch",
+      "DUMP-MASK annot=artifacts",
+      "QC eeg=C3_M2,C4_M1"
+    )
   ),
   base = list(
+    commands = c(
+      "EPOCH",
+      "SUPPRESS-ECG ecg=ECG",
+      "EDGER sig=* epoch mask",
+      "ARTIFACTS",
+      "SIGSTATS",
+      "CHEP-MASK ep-th=3,3,3 max=200,0.05 clipped=0.05 flat=0.05",
+      "CHEP epoch",
+      "DUMP-MASK annot=artifacts",
+      "QC eeg=C3_M2,C4_M1"
+    )
   ),
   bandpass_0_3_35 = list(
-    filter_commands = "FILTER bandpass=0.3,35 ripple=0.02 tw=1"
+    commands = c(
+      "EPOCH",
+      "SUPPRESS-ECG ecg=ECG",
+      "EDGER sig=* epoch mask",
+      "FILTER bandpass=0.3,35 ripple=0.02 tw=1",
+      "ARTIFACTS",
+      "SIGSTATS",
+      "CHEP-MASK ep-th=3,3,3 max=200,0.05 clipped=0.05 flat=0.05",
+      "CHEP epoch",
+      "DUMP-MASK annot=artifacts",
+      "QC eeg=C3_M2,C4_M1"
+    )
   ),
   notch_50 = list(
-    filter_commands = "FILTER bandstop=49,51 ripple=0.02 tw=1"
+    commands = c(
+      "EPOCH",
+      "SUPPRESS-ECG ecg=ECG",
+      "EDGER sig=* epoch mask",
+      "FILTER bandstop=49,51 ripple=0.02 tw=1",
+      "ARTIFACTS",
+      "SIGSTATS",
+      "CHEP-MASK ep-th=3,3,3 max=200,0.05 clipped=0.05 flat=0.05",
+      "CHEP epoch",
+      "DUMP-MASK annot=artifacts",
+      "QC eeg=C3_M2,C4_M1"
+    )
   )
 )
 
