@@ -12,11 +12,7 @@ get_qc <- function(
     bach_id = base_name,
     filter_profile = filter_profile
   )
-  load_edf(filtered_edf_path)
-
-  qc <- leval("QC eeg=C3_M2,C4_M1 epoch")
-  result$qc_ch_eeg <- list(extract_luna_table(qc, "CH_EEG"))
-  lrefresh()
+  result$qc_channel_dt <- list(get_filtered_qc_data(filtered_edf_path))
   result
 }
 

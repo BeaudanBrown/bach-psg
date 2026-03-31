@@ -255,3 +255,90 @@ get_raw_qc_data <- function(edf_path, xml_path = NULL) {
     channel_qc = channel_level
   )
 }
+
+get_filtered_qc_data <- function(filtered_edf_path) {
+  base_name <- infer_bach_id(filtered_edf_path)
+  filter_profile <- infer_filter_profile(filtered_edf_path)
+
+  load_edf(filtered_edf_path)
+  leval("EPOCH & SIGNALS keep=${eeg} & MASK clear")
+
+  artifacts <- leval("ARTIFACTS verbose")
+  artifact_channels <- extract_luna_table(
+    artifacts,
+    "CH",
+    cols = c("CH", "ALTERED_EPOCHS", "FLAGGED_EPOCHS", "TOTAL_EPOCHS")
+  )
+  if (nrow(artifact_channels)) {
+    setnames(
+      artifact_channels,
+      c("ALTERED_EPOCHS", "FLAGGED_EPOCHS", "TOTAL_EPOCHS"),
+      c(
+        "artifact_altered_epochs",
+        "artifact_flagged_epochs",
+        "artifact_total_epochs"
+      ),
+      skip_absent = TRUE
+    )
+  }
+
+  sigstats <- leval("SIGSTATS epoch")
+  sigstats_channels <- extract_luna_table(
+    sigstats,
+    "CH",
+    cols = c(
+      "CH",
+      "ALTERED_EPOCHS",
+      "CNT_ACT",
+      "CNT_CLP",
+      "CNT_CMP",
+      "CNT_MOB",
+      "CNT_RMS",
+      "FLAGGED_EPOCHS",
+      "TOTAL_EPOCHS",
+      "P_H1",
+      "P_H2",
+      "P_H3",
+      "P_OUT"
+    )
+  )
+  if (nrow(sigstats_channels)) {
+    setnames(
+      sigstats_channels,
+      c("ALTERED_EPOCHS", "FLAGGED_EPOCHS", "TOTAL_EPOCHS"),
+      c(
+        "sigstats_altered_epochs",
+        "sigstats_flagged_epochs",
+        "sigstats_total_epochs"
+      ),
+      skip_absent = TRUE
+    )
+  }
+
+  leval(PIPELINE_DEFAULT_QC_COMMANDS[[1]])
+  chep_dump <- leval("CHEP dump")
+  chep_channels <- extract_luna_table(
+    chep_dump,
+    "CH",
+    cols = c("CH", "CHEP")
+  )
+
+  lrefresh()
+
+  channel_level <- merge_dt_list(
+    list(
+      artifact_channels,
+      sigstats_channels,
+      chep_channels
+    ),
+    by = "CH"
+  )
+
+  if (nrow(channel_level)) {
+    channel_level[, bach_id := base_name]
+    channel_level[, filter_profile := filter_profile]
+    setcolorder(channel_level, c("bach_id", "filter_profile", "CH"))
+  }
+
+  channel_level
+}
