@@ -1,14 +1,76 @@
 library(luna)
 library(data.table)
 
-build_filtered_edf_command <- function(filtered_dir, base_name, include_artifact_re = FALSE) {
-  artifact_re <- if (include_artifact_re) {
-    " & RE"
-  } else {
-    ""
+DEFAULT_FILTER_COMMANDS <- c(
+  "CHEP-MASK ep-th=3,3,3 max=200,0.05 clipped=0.05 flat=0.05"
+)
+
+infer_filter_profile <- function(edf_path) {
+  edf_dir <- dirname(edf_path)
+  if (grepl("/filtered/", edf_dir, perl = TRUE)) {
+    profile <- basename(edf_dir)
+    return(ifelse(profile == "filtered", "base", profile))
   }
-  # QC eeg=C3_M2,C4_M1 &
-  # FILTER bandpass=0.3,35 &
+  "base"
+}
+
+infer_bach_id <- function(edf_path) {
+  base_name <- tools::file_path_sans_ext(basename(edf_path))
+  sub("_filtered$", "", base_name)
+}
+
+build_filtered_edf_command <- function(
+  filtered_dir,
+  base_name,
+  filter_profile = NULL
+) {
+  profile <- list(
+    filter_commands = DEFAULT_FILTER_COMMANDS
+  )
+
+  if (!is.null(filter_profile)) {
+    if (!is.list(filter_profile)) {
+      stop("filter_profile must be a list")
+    }
+
+    custom_commands <- filter_profile$filter_commands
+    if (!is.null(custom_commands)) {
+      if (!is.character(custom_commands)) {
+        stop("filter_profile$filter_commands must be a character vector")
+      }
+      custom_commands <- custom_commands[
+        !is.na(custom_commands) & nzchar(custom_commands)
+      ]
+      if (length(custom_commands)) {
+        profile$filter_commands <- c(profile$filter_commands, custom_commands)
+      }
+    }
+
+    unexpected <- setdiff(names(filter_profile), "filter_commands")
+    if (length(unexpected)) {
+      stop(
+        sprintf(
+          "Unexpected filter_profile entries: %s",
+          paste(unexpected, collapse = ", ")
+        )
+      )
+    }
+  }
+
+  artifact_re <- " & RE"
+
+  filter_commands <- vapply(
+    profile$filter_commands,
+    as.character,
+    character(1),
+    USE.NAMES = FALSE
+  )
+  if (!length(filter_commands)) {
+    filter_commands <- DEFAULT_FILTER_COMMANDS
+  }
+
+  # Keep filters first, then keep annotation/qc export unchanged.
+  filter_chain <- paste(filter_commands, collapse = " & ")
 
   sprintf(
     "EPOCH &
@@ -17,12 +79,13 @@ build_filtered_edf_command <- function(filtered_dir, base_name, include_artifact
     EDGER sig=${eeg} epoch mask &
     ARTIFACTS &
     SIGSTATS &
-    CHEP-MASK ep-th=3,3,3 max=200,0.05 clipped=0.05 flat=0.05 &
+    %s &
     CHEP epoch &
     DUMP-MASK annot=artifacts%s &
     QC eeg=C3_M2,C4_M1 &
     WRITE-ANNOTS file=%s/%s.annots &
     WRITE edf-dir=%s edf=%s",
+    filter_chain,
     artifact_re,
     filtered_dir,
     base_name,
@@ -35,11 +98,13 @@ process_edf <- function(filtered_edf_paths) {
   # filtered_edf_paths may contain both .edf and .annots paths
   # Extract just the .edf file
   filtered_edf_path <- filtered_edf_paths[grepl("\\.edf$", filtered_edf_paths)]
-  base_name <- tools::file_path_sans_ext(basename(filtered_edf_path))
+  base_name <- infer_bach_id(filtered_edf_path)
+  filter_profile <- infer_filter_profile(filtered_edf_path)
   load_edf(filtered_edf_path)
 
   result <- data.table(
-    bach_id = base_name
+    bach_id = base_name,
+    filter_profile = filter_profile
   )
 
   leval("MASK ifnot=N2,N3 & RE")
@@ -51,20 +116,27 @@ process_edf <- function(filtered_edf_paths) {
   result
 }
 
-create_filtered_edf <- function(edf_path) {
-  filtered_dir <- file.path(dirname(edf_path), "filtered")
-  base_name <- tools::file_path_sans_ext(basename(edf_path))
+create_filtered_edf <- function(edf_path, filter_profile_name = "base", filter_profile = NULL) {
+  filtered_dir <- file.path(dirname(edf_path), "filtered", filter_profile_name)
+  raw_base_name <- tools::file_path_sans_ext(basename(edf_path))
   xml_path <- paste0(edf_path, ".XML")
-  filtered_name <- paste0(base_name, "_filtered")
-  filtered_path <- file.path(filtered_dir, paste0(base_name, "_filtered", ".edf"))
+  filtered_name <- paste0(raw_base_name, "_filtered")
+  filtered_path <- file.path(filtered_dir, paste0(raw_base_name, "_filtered", ".edf"))
   annot_path <- file.path(filtered_dir, paste0(filtered_name, ".annots"))
 
   if (!dir.exists(filtered_dir)) {
     dir.create(filtered_dir, recursive = TRUE)
   }
 
-  ledf(edf_path, base_name, xml_path)
-  cmd <- build_filtered_edf_command(filtered_dir, filtered_name, include_artifact_re = TRUE)
+  ledf(edf_path, raw_base_name, xml_path)
+  if (!is.null(filter_profile) && !is.list(filter_profile)) {
+    stop("filter_profile must be a list")
+  }
+  cmd <- build_filtered_edf_command(
+    filtered_dir = filtered_dir,
+    base_name = filtered_name,
+    filter_profile = filter_profile
+  )
   print(cmd)
   leval(cmd)
   lrefresh()
@@ -73,10 +145,10 @@ create_filtered_edf <- function(edf_path) {
   c(filtered_path, annot_path)
 }
 
-get_filtered_edf_path <- function(edf_path) {
-  filtered_dir <- file.path(dirname(edf_path), "filtered")
+get_filtered_edf_path <- function(edf_path, filter_profile_name = "base") {
+  filtered_dir <- file.path(dirname(edf_path), "filtered", filter_profile_name)
   base_name <- tools::file_path_sans_ext(basename(edf_path))
-  file.path(filtered_dir, paste0(base_name, ".edf"))
+  file.path(filtered_dir, paste0(base_name, "_filtered", ".edf"))
 }
 
 load_edf <- function(edf_path, xml_path = NULL) {
@@ -84,7 +156,13 @@ load_edf <- function(edf_path, xml_path = NULL) {
   if (is.null(xml_path)) {
     # Assume XML is named like the original EDF (not the filtered one)
     # For filtered EDFs, the XML is still with the original
-    xml_path <- paste0(gsub("_filtered", "", gsub("/filtered/", "/", edf_path)), ".XML")
+    raw_dir <- if (grepl("/filtered", dirname(edf_path), perl = TRUE)) {
+      sub("/filtered(?:/[^/]+)?$", "", dirname(edf_path), perl = TRUE)
+    } else {
+      dirname(edf_path)
+    }
+    raw_base_name <- infer_bach_id(edf_path)
+    xml_path <- file.path(raw_dir, paste0(raw_base_name, ".XML"))
   }
   ledf(edf_path, base_name, xml_path)
 }
@@ -281,151 +359,5 @@ get_raw_qc_data <- function(edf_path) {
   list(
     epoch_qc = epoch_level,
     channel_qc = channel_level
-  )
-}
-
-get_empirical_threshold <- function(
-  ppt_results,
-  channels = c("C3_M2", "C4_M1")
-) {
-  CH_F <- data.table(ppt_results$spindles[[1]]$CH_F)
-  CH_F <- CH_F[CH %in% channels & EMPTH < 20, ]
-  median(CH_F$EMPTH)
-}
-
-get_qc <- function(
-  filtered_edf_paths
-) {
-  # filtered_edf_paths may contain both .edf and .annots paths
-  # Extract just the .edf file
-  filtered_edf_path <- filtered_edf_paths[grepl("\\.edf$", filtered_edf_paths)]
-  base_name <- tools::file_path_sans_ext(basename(filtered_edf_path))
-  result <- data.table(
-    bach_id = base_name
-  )
-  load_edf(filtered_edf_path)
-
-  result$psd <- leval("QC eeg=C3_M2,C4_M1 epoch")
-  lrefresh()
-  result
-}
-
-get_psd_results <- function(
-  filtered_edf_paths,
-  sleep_stage
-) {
-  # filtered_edf_paths may contain both .edf and .annots paths
-  # Extract just the .edf file
-  filtered_edf_path <- filtered_edf_paths[grepl("\\.edf$", filtered_edf_paths)]
-  base_name <- tools::file_path_sans_ext(basename(filtered_edf_path))
-  result <- data.table(
-    bach_id = base_name
-  )
-  load_edf(filtered_edf_path)
-
-  leval(paste0("MASK ifnot=", sleep_stage, " & RE"))
-  result$psd <- leval("PSD spectrum epoch")
-  result$epoch_map <- leval("EPOCH verbose")
-  lrefresh()
-  result
-}
-
-get_stage_spindles_with_threshold <- function(
-  filtered_edf_paths,
-  threshold,
-  sleep_stage
-) {
-  # filtered_edf_paths may contain both .edf and .annots paths
-  # Extract just the .edf file
-  filtered_edf_path <- filtered_edf_paths[grepl("\\.edf$", filtered_edf_paths)]
-  base_name <- tools::file_path_sans_ext(basename(filtered_edf_path))
-  result <- data.table(
-    bach_id = base_name
-  )
-  load_edf(filtered_edf_path)
-
-  leval(paste0("MASK ifnot=", sleep_stage, " & RE"))
-  result$psd <- leval("PSD spectrum")
-  result$epoch_map <- leval("EPOCH verbose")
-  result$spindles <- leval(
-    paste0(
-      "SPINDLES fc=11,15 sig=C3_M2,C4_M1,F3_M2,F4_M1 th=",
-      threshold,
-      " epoch so f-lwr=0.3 f-upr=4 t-neg-lwr=0.3 t-neg-upr=1.5 t-pos-lwr=0 t-pos-upr=1.0 uV-neg=-40 uV-p2p=75 nreps=100000"
-    )
-  )
-  lrefresh()
-  result
-}
-
-get_raw_stage_spindles_with_threshold <- function(
-  edf_path,
-  threshold,
-  sleep_stage
-) {
-  base_name <- tools::file_path_sans_ext(basename(edf_path))
-  xml_path <- paste0(edf_path, ".XML")
-
-  ledf(edf_path, base_name, xml_path)
-  leval("EPOCH & SIGNALS keep=${eeg}")
-  result <- data.table(
-    bach_id = base_name
-  )
-
-  result$epoch_map <- leval("EPOCH verbose")
-  result$spindles <- leval(
-    paste0(
-      "SPINDLES fc=11,15 sig=C3_M2,C4_M1,F3_M2,F4_M1 th=",
-      threshold,
-      " epoch so f-lwr=0.3 f-upr=4 t-neg-lwr=0.3 t-neg-upr=1.5 t-pos-lwr=0 t-pos-upr=1.0 uV-neg=-40 uV-p2p=75 nreps=100000"
-    )
-  )
-  lrefresh()
-  result
-}
-
-extract_spindle_epoch_counts <- function(stage_threshold_results, sleep_stage) {
-  epoch_map <- extract_luna_table(
-    stage_threshold_results$epoch_map,
-    "E",
-    cols = c("E", "E1", "START", "STOP", "MID")
-  )
-  spindle_epochs <- extract_luna_table(
-    stage_threshold_results$spindles,
-    "CH_E_F",
-    cols = c("CH", "E", "F", "N")
-  )
-
-  if (nrow(spindle_epochs) && nrow(epoch_map)) {
-    spindle_epochs <- merge(spindle_epochs, epoch_map, by = "E", all.x = TRUE)
-  }
-
-  if (nrow(spindle_epochs)) {
-    setnames(spindle_epochs, "E1", "raw_epoch", skip_absent = TRUE)
-    if (!"raw_epoch" %in% names(spindle_epochs)) {
-      spindle_epochs[, raw_epoch := E]
-    }
-    spindle_epochs[is.na(raw_epoch), raw_epoch := E]
-    spindle_epochs[, `:=`(
-      bach_id = stage_threshold_results$bach_id[[1]],
-      sleep_stage = sleep_stage
-    )]
-    setcolorder(spindle_epochs, c("bach_id", "sleep_stage", "CH", "E", "raw_epoch", "F", "N"))
-  }
-
-  ensure_dt_cols(
-    spindle_epochs,
-    c(
-      "bach_id",
-      "sleep_stage",
-      "CH",
-      "E",
-      "raw_epoch",
-      "F",
-      "N",
-      "START",
-      "STOP",
-      "MID"
-    )
   )
 }
