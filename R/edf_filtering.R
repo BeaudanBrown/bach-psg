@@ -35,93 +35,30 @@ build_filtered_edf_command <- function(
   filter_profile = NULL,
   drop_channels = character()
 ) {
-  profile <- list(
-    filter_commands = character(),
-    qc_commands = PIPELINE_DEFAULT_QC_COMMANDS
-  )
-
-  if (!is.null(filter_profile)) {
-    if (!is.list(filter_profile)) {
-      stop("filter_profile must be a list")
-    }
-
-    custom_commands <- filter_profile$filter_commands
-    if (!is.null(custom_commands)) {
-      if (!is.character(custom_commands)) {
-        stop("filter_profile$filter_commands must be a character vector")
-      }
-      custom_commands <- custom_commands[
-        !is.na(custom_commands) & nzchar(custom_commands)
-      ]
-      if (length(custom_commands)) {
-        profile$filter_commands <- c(profile$filter_commands, custom_commands)
-      }
-    }
-
-    unexpected <- setdiff(names(filter_profile), "filter_commands")
-    if (length(unexpected)) {
-      stop(
-        sprintf(
-          "Unexpected filter_profile entries: %s",
-          paste(unexpected, collapse = ", ")
-        )
-      )
-    }
-  }
-
-  filter_commands <- vapply(
-    profile$filter_commands,
-    as.character,
-    character(1),
-    USE.NAMES = FALSE
-  )
-  qc_commands <- vapply(
-    profile$qc_commands,
-    as.character,
-    character(1),
-    USE.NAMES = FALSE
-  )
-
-  filter_chain <- paste(filter_commands, collapse = " & ")
-  qc_chain <- paste(qc_commands, collapse = " & ")
-  pre_artifact_filter_step <- if (length(filter_commands)) {
-    paste0(filter_chain, " &")
-  } else {
-    ""
-  }
+  filter_commands <- filter_profile$filter_commands %||% character()
   signal_drop_step <- if (length(drop_channels)) {
-    sprintf(
-      "SIGNALS drop=%s &",
-      paste(drop_channels, collapse = ",")
-    )
-  } else {
-    ""
+    sprintf("SIGNALS drop=%s", paste(drop_channels, collapse = ","))
   }
 
-  sprintf(
-    "EPOCH &
-    SUPPRESS-ECG ecg=ECG &
-    SIGNALS keep=${eeg} &
-    %s
-    MASK clear &
-    EDGER sig=${eeg} epoch mask &
-    %s
-    ARTIFACTS &
-    SIGSTATS &
-    %s &
-    CHEP epoch &
-    DUMP-MASK annot=artifacts &
-    QC eeg=C3_M2,C4_M1 &
-    WRITE-ANNOTS file=%s/%s.annots annot=artifacts &
-    WRITE edf-dir=%s edf=%s",
+  commands <- c(
+    "EPOCH",
+    "SUPPRESS-ECG ecg=ECG",
+    "SIGNALS keep=${eeg}",
     signal_drop_step,
-    pre_artifact_filter_step,
-    qc_chain,
-    filtered_dir,
-    base_name,
-    filtered_dir,
-    base_name
+    "MASK clear",
+    "EDGER sig=${eeg} epoch mask",
+    filter_commands,
+    "ARTIFACTS",
+    "SIGSTATS",
+    PIPELINE_DEFAULT_QC_COMMANDS,
+    "CHEP epoch",
+    "DUMP-MASK annot=artifacts",
+    "QC eeg=C3_M2,C4_M1",
+    sprintf("WRITE-ANNOTS file=%s/%s.annots annot=artifacts", filtered_dir, base_name),
+    sprintf("WRITE edf-dir=%s edf=%s", filtered_dir, base_name)
   )
+
+  paste(commands[nzchar(commands)], collapse = " &\n    ")
 }
 
 create_filtered_edf <- function(edf_path, xml_path = NULL, filter_profile_name = "base", filter_profile = NULL, drop_channels = character()) {
@@ -139,9 +76,6 @@ create_filtered_edf <- function(edf_path, xml_path = NULL, filter_profile_name =
   }
 
   ledf(edf_path, raw_base_name, annots = xml_path)
-  if (!is.null(filter_profile) && !is.list(filter_profile)) {
-    stop("filter_profile must be a list")
-  }
   cmd <- build_filtered_edf_command(
     filtered_dir = filtered_dir,
     base_name = filtered_name,
