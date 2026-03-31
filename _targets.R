@@ -47,9 +47,33 @@ list(
   # Filtered EDFs (artifact-cleaned)
   ##########################
   tar_target(
+    filter_profiles,
+    list(
+      base = list(
+      ),
+      bandpass_0_3_35 = list(
+        filter_commands = "FILTER bandpass=0.3,35"
+      ),
+      notch_50 = list(
+        filter_commands = "FILTER notch=50"
+      ),
+      bandpass_0_3_35_notch_50 = list(
+        filter_commands = c("FILTER bandpass=0.3,35", "FILTER notch=50")
+      )
+    )
+  ),
+  tar_target(
+    filter_profile_names,
+    names(filter_profiles)
+  ),
+  tar_target(
     filtered_edf_files,
-    create_filtered_edf(edf_files),
-    pattern = map(edf_files),
+    create_filtered_edf(
+      edf_files,
+      filter_profile_name = filter_profile_names,
+      filter_profile = filter_profiles[[filter_profile_names]]
+    ),
+    pattern = cross(edf_files, filter_profile_names),
     format = "file"
   ),
   ##########################
@@ -64,6 +88,10 @@ list(
     per_ppt_thresholds,
     get_empirical_threshold(edf_results),
     pattern = map(edf_results)
+  ),
+  tar_target(
+    per_profile_thresholds,
+    get_empirical_threshold_by_profile(edf_results)
   ),
   tar_target(
     threshold,
@@ -151,6 +179,10 @@ list(
   # Branching constants
   ##########################
   tar_target(
+    sleep_stage,
+    c("N2", "N3")
+  ),
+  tar_target(
     freqs,
     c(11, 15)
   ),
@@ -180,132 +212,144 @@ list(
     ),
     pattern = map(filtered_edf_files)
   ),
-  tar_map(
-    # Sleep stage masks
-    values = data.table(
-      mask = c("N2", "N3"),
-      name = c("N2", "N3")
-    ),
-    names = "name",
-    # Run Luna to get spindle/SO data for given mask (uses filtered EDFs)
-    tar_target(
-      psd_results,
-      get_psd_results(
+  # Run Luna to get spindle/SO data for each EDF and sleep stage.
+  tar_target(
+    psd_results,
+    {
+      result <- get_psd_results(
         filtered_edf_files,
-        sleep_stage = mask
-      ),
-      pattern = map(filtered_edf_files)
-    ),
-    tar_target(
-      stage_threshold_results,
-      get_stage_spindles_with_threshold(
+        sleep_stage = sleep_stage
+      )
+      result$sleep_stage <- sleep_stage
+      result
+    },
+    pattern = cross(filtered_edf_files, sleep_stage)
+  ),
+  tar_target(
+    stage_threshold_results,
+    {
+      filter_profile <- infer_filter_profile(filtered_edf_files)
+      threshold_value <- ifelse(
+        is.null(per_profile_thresholds[[filter_profile]]) ||
+          is.na(per_profile_thresholds[[filter_profile]]),
+        median(per_ppt_thresholds, na.rm = TRUE),
+        per_profile_thresholds[[filter_profile]]
+      )
+      result <- get_stage_spindles_with_threshold(
         filtered_edf_files,
-        threshold,
-        sleep_stage = mask
-      ),
-      pattern = map(filtered_edf_files)
-    ),
-    # QC/sensitivity branch:
-    # run stage-restricted spindle detection on the raw EDF without
-    # restructuring so noisy-versus-clean epochs can be compared.
-    tar_target(
-      raw_stage_threshold_results,
-      get_raw_stage_spindles_with_threshold(
+        threshold_value,
+        sleep_stage = sleep_stage
+      )
+      result$sleep_stage <- sleep_stage
+      result$filter_profile <- filter_profile
+      result
+    },
+    pattern = cross(filtered_edf_files, sleep_stage)
+  ),
+  # QC/sensitivity branch:
+  # run stage-restricted spindle detection on the raw EDF without
+  # restructuring so noisy-versus-clean epochs can be compared.
+  tar_target(
+    raw_stage_threshold_results,
+    {
+      result <- get_raw_stage_spindles_with_threshold(
         edf_files,
         threshold,
-        sleep_stage = mask
-      ),
-      pattern = map(edf_files)
-    ),
-    # Combine spindle and SO data into a data.table with relevant columns
-    tar_target(
-      filtered_results,
-      filter_spindles_so(stage_threshold_results),
-      pattern = map(stage_threshold_results)
-    ),
-    tar_target(
-      cleaned_spindle_epochs,
-      extract_spindle_epoch_counts(stage_threshold_results, sleep_stage = mask),
-      pattern = map(stage_threshold_results)
-    ),
-    tar_target(
-      raw_spindle_epochs,
-      extract_spindle_epoch_counts(raw_stage_threshold_results, sleep_stage = mask),
-      pattern = map(raw_stage_threshold_results)
-    ),
-    tar_target(
-      raw_spindle_qc,
-      compare_spindles_by_qc(raw_spindle_epochs, qc_epoch_dt, sleep_stage = mask),
-      pattern = map(raw_spindle_epochs)
-    ),
-    # Filter coupl_angle based on coupl_mag_emp
-    tar_target(
-      cleaned_results,
-      clean_angle(filtered_results),
-      pattern = map(filtered_results)
-    ),
-    # Get dataset with each combination of frequency and channel
-    tar_target(
-      dataset,
-      cleaned_results[F == freqs & grepl(channels, CH), ],
-      pattern = cross(freqs, channels)
-    ),
-    # Unwrap angle data and average across the 2 electrodes/channel
-    tar_target(
-      wrapped_dataset,
-      wrap_angle(dataset),
-      pattern = map(dataset)
-    ),
-    # Merge spindle/so data with redcap data
-    tar_target(
-      merged,
-      merge(wrapped_dataset, redcap_data, by = "ID", all.x = TRUE),
-      pattern = map(wrapped_dataset)
-    ),
-    # make models
-    tar_target(
-      all_models,
-      get_model(merged, outcomes, predictors, moderators),
-      pattern = cross(cross(cross(outcomes, predictors), moderators), merged)
-    ),
-    # Fit model and extract parameter estimate/p val for all outcomes/predictors
-    tar_target(
-      model_summary,
-      get_model_estimate(merged, outcomes, predictors),
-      pattern = cross(cross(outcomes, predictors), merged)
-    ),
-    tar_target(
-      moderation_summary,
-      get_interaction_estimates(merged, outcomes, predictors, moderators),
-      pattern = cross(cross(cross(outcomes, predictors), moderators), merged)
-    ),
-    tar_target(
-      significant_results,
-      moderation_summary[`Pr(>|t|)` < .05, ]
-    ),
-    tar_target(
-      significant_model_results,
-      model_summary[`Pr(>|t|)` < .05, ]
-    )
+        sleep_stage = sleep_stage
+      )
+      result$sleep_stage <- sleep_stage
+      result
+    },
+    pattern = cross(edf_files, sleep_stage)
+  ),
+  # Combine spindle and SO data into a data.table with relevant columns
+  tar_target(
+    filtered_results,
+    filter_spindles_so(stage_threshold_results),
+    pattern = map(stage_threshold_results)
+  ),
+  tar_target(
+    cleaned_spindle_epochs,
+    extract_spindle_epoch_counts(stage_threshold_results, sleep_stage = sleep_stage),
+    pattern = map(stage_threshold_results)
+  ),
+  tar_target(
+    raw_spindle_epochs,
+    extract_spindle_epoch_counts(raw_stage_threshold_results, sleep_stage = sleep_stage),
+    pattern = map(raw_stage_threshold_results)
+  ),
+  tar_target(
+    raw_spindle_qc,
+    compare_spindles_by_qc(raw_spindle_epochs, qc_epoch_dt, sleep_stage = sleep_stage),
+    pattern = map(raw_spindle_epochs)
+  ),
+  # Filter coupl_angle based on coupl_mag_emp
+  tar_target(
+    cleaned_results,
+    clean_angle(filtered_results),
+    pattern = map(filtered_results)
+  ),
+  # Get dataset with each combination of frequency and channel
+  tar_target(
+    dataset,
+    cleaned_results[F == freqs & grepl(channels, CH), ],
+    pattern = cross(freqs, channels)
+  ),
+  # Unwrap angle data and average across the 2 electrodes/channel
+  tar_target(
+    wrapped_dataset,
+    wrap_angle(dataset),
+    pattern = map(dataset)
+  ),
+  # Merge spindle/so data with redcap data
+  tar_target(
+    merged,
+    merge(wrapped_dataset, redcap_data, by = "ID", all.x = TRUE),
+    pattern = map(wrapped_dataset)
+  ),
+  # make models
+  tar_target(
+    all_models,
+    get_model(merged, outcomes, predictors, moderators),
+    pattern = cross(cross(cross(outcomes, predictors), moderators), merged)
+  ),
+  # Fit model and extract parameter estimate/p val for all outcomes/predictors
+  tar_target(
+    model_summary,
+    get_model_estimate(merged, outcomes, predictors),
+    pattern = cross(cross(outcomes, predictors), merged)
+  ),
+  tar_target(
+    moderation_summary,
+    get_interaction_estimates(merged, outcomes, predictors, moderators),
+    pattern = cross(cross(cross(outcomes, predictors), moderators), merged)
+  ),
+  tar_target(
+    significant_results,
+    moderation_summary[`Pr(>|t|)` < .05, ]
+  ),
+  tar_target(
+    significant_model_results,
+    model_summary[`Pr(>|t|)` < .05, ]
   ),
   tar_target(
     cleaned_spindle_epoch_dt,
     rbindlist(
-      collect_tables(list(cleaned_spindle_epochs_N2, cleaned_spindle_epochs_N3)),
+      collect_tables(cleaned_spindle_epochs),
       fill = TRUE
     )
   ),
   tar_target(
     raw_spindle_epoch_dt,
     rbindlist(
-      collect_tables(list(raw_spindle_epochs_N2, raw_spindle_epochs_N3)),
+      collect_tables(raw_spindle_epochs),
       fill = TRUE
     )
   ),
   tar_target(
     raw_spindle_qc_dt,
     rbindlist(
-      collect_tables(list(raw_spindle_qc_N2, raw_spindle_qc_N3)),
+      collect_tables(raw_spindle_qc),
       fill = TRUE
     )
   ),
@@ -325,23 +369,25 @@ list(
   tar_target(
     psd_dt,
     {
-      stages <- list(
-        N2 = psd_results_N2$psd,
-        N3 = psd_results_N3$psd
-      )
       rbindlist(
-        lapply(names(stages), function(stage_name) {
-          results <- lapply(stages[[stage_name]], function(ppt_data) {
-            if (is.null(ppt_data) || is.null(ppt_data$B_CH)) {
+        lapply(
+          collect_tables(psd_results),
+          function(ppt_result) {
+            if (is.null(ppt_result$psd) || is.null(ppt_result$psd$B_CH)) {
               return(NULL)
             }
-            ppt_data$B_CH$stage <- stage_name
-            ppt_data$B_CH
-          })
-          rbindlist(Filter(Negate(is.null), results))
-        })
+            out <- copy(ppt_result$psd$B_CH)
+            out$stage <- if (is.null(ppt_result$sleep_stage)) {
+              NA_character_
+            } else {
+              ppt_result$sleep_stage
+            }
+            out$filter_profile <- ppt_result$filter_profile
+            out
+          }
+        ),
+        fill = TRUE
       )
-
     }
   ),
   tar_target(
@@ -361,6 +407,7 @@ list(
         lapply(seq_len(nrow(qc_results)), function(i) {
           dt <- as.data.table(qc_results$psd[[i]]$CH_EEG)
           dt[, bach_id := qc_results$bach_id[i]]
+          dt[, filter_profile := qc_results$filter_profile[i]]
           dt
         }),
         fill = TRUE
