@@ -38,14 +38,5 @@ build_analysis_targets <- function() {
       significant_model_results,
       model_summary[`Pr(>|t|)` < .05, ]
     ),
-    tar_target(
-      qc_overview,
-      build_qc_overview(
-        qc_summary,
-        raw_spindle_qc_summary,
-        edge_epoch_review,
-        line_noise_summary
-      )
-    )
   )
 }

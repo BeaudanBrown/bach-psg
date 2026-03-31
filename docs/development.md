@@ -27,7 +27,6 @@ cp .env.example .env
 just manifest
 just run
 just psd-csv
-just artifact-verify /absolute/path/to/BACH0001.edf N2
 ```
 
 ## Structure
@@ -43,8 +42,6 @@ just artifact-verify /absolute/path/to/BACH0001.edf N2
   processing helpers.
 - `R/qc.R` contains QC summaries and review tables.
 - `R/analysis.R` contains spindle/SO transforms and model helpers.
-- `R/artifact_verification.R` contains non-destructive checks for whether the
-  current preprocessing path actually excludes artifact-masked epochs.
 
 ## Boundary
 

@@ -29,47 +29,6 @@ lookup_channel_exclusions <- function(edf_path, channel_exclusions = PIPELINE_CH
   unique(unlist(matched$drop_channels, use.names = FALSE))
 }
 
-build_filtered_edf_command <- function(
-  filtered_dir,
-  base_name,
-  filter_profile = NULL
-) {
-  filter_commands <- filter_profile$filter_commands %||% character()
-
-  commands <- c(
-    "EPOCH",
-    "SUPPRESS-ECG ecg=ECG",
-    "SIGNALS keep=${eeg}",
-    "MASK clear",
-    "EDGER sig=${eeg} epoch mask",
-    filter_commands,
-    "ARTIFACTS",
-    "SIGSTATS",
-    PIPELINE_DEFAULT_QC_COMMANDS,
-    "CHEP epoch",
-    "DUMP-MASK annot=artifacts",
-    "QC eeg=C3_M2,C4_M1",
-    sprintf("WRITE-ANNOTS file=%s/%s.annots annot=artifacts", filtered_dir, base_name),
-    sprintf("WRITE edf-dir=%s edf=%s", filtered_dir, base_name)
-  )
-
-  paste(commands[nzchar(commands)], collapse = " &\n    ")
-}
-
-build_channel_drop_edf_command <- function(base_name, drop_channels = character()) {
-  signal_drop_step <- if (length(drop_channels)) {
-    sprintf("SIGNALS drop=%s", paste(drop_channels, collapse = ","))
-  }
-
-  commands <- c(
-    "SIGNALS keep=${eeg}",
-    signal_drop_step,
-    sprintf("WRITE edf-dir=%s edf=%s", dirname(base_name), basename(base_name))
-  )
-
-  paste(commands[nzchar(commands)], collapse = " &\n    ")
-}
-
 create_channel_dropped_edf <- function(edf_path, xml_path = NULL, drop_channels = character()) {
   raw_base_name <- tools::file_path_sans_ext(basename(edf_path))
   if (is.null(xml_path)) {
@@ -84,10 +43,15 @@ create_channel_dropped_edf <- function(edf_path, xml_path = NULL, drop_channels 
   }
 
   ledf(edf_path, raw_base_name, annots = xml_path)
-  cmd <- build_channel_drop_edf_command(
-    base_name = dropped_path,
-    drop_channels = drop_channels
+  signal_drop_step <- if (length(drop_channels)) {
+    sprintf("SIGNALS drop=%s", paste(drop_channels, collapse = ","))
+  }
+  commands <- c(
+    "SIGNALS keep=${eeg}",
+    signal_drop_step,
+    sprintf("WRITE edf-dir=%s edf=%s", dirname(dropped_path), basename(dropped_path))
   )
+  cmd <- paste(commands[nzchar(commands)], collapse = " &\n    ")
   print(cmd)
   leval(cmd)
   lrefresh()
@@ -110,11 +74,24 @@ create_filtered_edf <- function(edf_path, xml_path = NULL, filter_profile_name =
   }
 
   ledf(edf_path, raw_base_name, annots = xml_path)
-  cmd <- build_filtered_edf_command(
-    filtered_dir = filtered_dir,
-    base_name = filtered_name,
-    filter_profile = filter_profile
+  filter_commands <- filter_profile$filter_commands %||% character()
+  commands <- c(
+    "EPOCH",
+    "SUPPRESS-ECG ecg=ECG",
+    "SIGNALS keep=${eeg}",
+    "MASK clear",
+    "EDGER sig=${eeg} epoch mask",
+    filter_commands,
+    "ARTIFACTS",
+    "SIGSTATS",
+    PIPELINE_DEFAULT_QC_COMMANDS,
+    "CHEP epoch",
+    "DUMP-MASK annot=artifacts",
+    "QC eeg=C3_M2,C4_M1",
+    sprintf("WRITE-ANNOTS file=%s/%s.annots annot=artifacts", filtered_dir, filtered_name),
+    sprintf("WRITE edf-dir=%s edf=%s", filtered_dir, filtered_name)
   )
+  cmd <- paste(commands[nzchar(commands)], collapse = " &\n    ")
   print(cmd)
   leval(cmd)
   lrefresh()

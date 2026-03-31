@@ -51,11 +51,6 @@ build_spindle_targets <- function() {
       pattern = map(raw_stage_threshold_results)
     ),
     tar_target(
-      raw_spindle_qc,
-      compare_spindles_by_qc(raw_spindle_epochs, qc_epoch_dt, sleep_stage = sleep_stage),
-      pattern = map(raw_spindle_epochs)
-    ),
-    tar_target(
       cleaned_results,
       clean_angle(filtered_results),
       pattern = map(filtered_results)
@@ -67,14 +62,6 @@ build_spindle_targets <- function() {
     tar_target(
       raw_spindle_epoch_dt,
       collect_data_tables(raw_spindle_epochs)
-    ),
-    tar_target(
-      raw_spindle_qc_dt,
-      collect_data_tables(raw_spindle_qc)
-    ),
-    tar_target(
-      raw_spindle_qc_summary,
-      summarize_spindle_qc(raw_spindle_qc_dt)
     )
   )
 }
