@@ -15,16 +15,16 @@ get_raw_xml_path <- function(edf_path) {
 
 lookup_channel_exclusions <- function(edf_path, channel_exclusions = PIPELINE_CHANNEL_EXCLUSIONS) {
   bach_id <- infer_bach_id(edf_path)
-  if (!nrow(channel_exclusions)) {
+  if (!length(channel_exclusions)) {
     return(character())
   }
 
-  matched <- channel_exclusions[channel_exclusions[["bach_id"]] == bach_id]
-  if (!nrow(matched)) {
+  matched <- channel_exclusions[[bach_id]]
+  if (is.null(matched)) {
     return(character())
   }
 
-  unique(unlist(matched$drop_channels, use.names = FALSE))
+  unique(unlist(matched, use.names = FALSE))
 }
 
 create_channel_dropped_edf <- function(edf_path, xml_path = NULL, drop_channels = character()) {
