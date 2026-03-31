@@ -3,10 +3,8 @@ build_export_targets <- function() {
     tar_target(
       psd_csv,
       {
-        path <- file.path(
-          data_dir,
-          sprintf("psd_dt_%s.csv", filter_profile_names)
-        )
+        output_dir <- build_output_dir(data_dir, filter_profile_names)
+        path <- file.path(output_dir, "psd_dt.csv")
         fwrite(psd_dt, path)
         path
       },
@@ -16,11 +14,12 @@ build_export_targets <- function() {
     tar_target(
       qc_csv,
       {
-        path <- file.path(data_dir, "qc_dt.csv")
-        qc_dt <- build_qc_csv_rows(qc_results)
+        output_dir <- build_output_dir(data_dir, filter_profile_names)
+        path <- file.path(output_dir, "qc_dt.csv")
         fwrite(qc_dt, path)
         path
       },
+      pattern = map(qc_dt, filter_profile_names),
       format = "file"
     )
   )

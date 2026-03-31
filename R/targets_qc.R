@@ -58,6 +58,15 @@ build_qc_targets <- function() {
       qc_results,
       get_qc(filtered_edf_files),
       pattern = map(filtered_edf_files)
+    ),
+    tar_target(
+      qc_all_dt,
+      build_qc_csv_rows(qc_results)
+    ),
+    tar_target(
+      qc_dt,
+      qc_all_dt[filter_profile == filter_profile_names],
+      pattern = map(filter_profile_names)
     )
   )
 }

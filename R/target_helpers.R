@@ -70,3 +70,11 @@ build_qc_csv_rows <- function(qc_results) {
 
   rbindlist(qc_rows, fill = TRUE)
 }
+
+build_output_dir <- function(data_dir, filter_profile_name) {
+  path <- file.path(data_dir, filter_profile_name)
+  if (!dir.exists(path)) {
+    dir.create(path, recursive = TRUE)
+  }
+  path
+}
