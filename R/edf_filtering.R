@@ -79,6 +79,7 @@ build_filtered_edf_command <- function(
     "EPOCH &
     SUPPRESS-ECG ecg=ECG &
     SIGNALS keep=${eeg} &
+    MASK clear &
     EDGER sig=${eeg} epoch mask &
     %s
     ARTIFACTS &
