@@ -124,8 +124,11 @@ wrap_angle <- function(ppt_data) {
 
 get_empirical_threshold <- function(
   ppt_results,
-  channels = c("C3_M2", "C4_M1")
+  channels = NULL
 ) {
+  if (is.null(channels)) {
+    channels <- PIPELINE_SPINDLE_THRESHOLD_CHANNELS
+  }
   CH_F <- data.table(ppt_results$spindles[[1]]$CH_F)
   CH_F <- CH_F[CH %in% channels & EMPTH < 20, ]
   median(CH_F$EMPTH)
@@ -133,8 +136,11 @@ get_empirical_threshold <- function(
 
 get_empirical_threshold_by_profile <- function(
   edf_results,
-  channels = c("C3_M2", "C4_M1")
+  channels = NULL
 ) {
+  if (is.null(channels)) {
+    channels <- PIPELINE_SPINDLE_THRESHOLD_CHANNELS
+  }
   results_by_profile <- split(
     edf_results,
     vapply(
@@ -152,9 +158,9 @@ get_empirical_threshold_by_profile <- function(
   )
   vapply(
     results_by_profile,
-    get_empirical_threshold,
-    numeric(1),
-    channels = channels
+          get_empirical_threshold,
+          numeric(1),
+          channels = channels
   )
 }
 
@@ -177,13 +183,7 @@ get_stage_spindles_with_threshold <- function(
   leval(paste0("MASK ifnot=", sleep_stage, " & RE"))
   result$psd <- leval("PSD spectrum")
   result$epoch_map <- leval("EPOCH verbose")
-  result$spindles <- leval(
-    paste0(
-      "SPINDLES fc=11,15 sig=C3_M2,C4_M1,F3_M2,F4_M1 th=",
-      threshold,
-      " epoch so f-lwr=0.3 f-upr=4 t-neg-lwr=0.3 t-neg-upr=1.5 t-pos-lwr=0 t-pos-upr=1.0 uV-neg=-40 uV-p2p=75 nreps=100000"
-    )
-  )
+  result$spindles <- leval(build_spindle_command(threshold))
   lrefresh()
   result
 }
@@ -203,15 +203,23 @@ get_raw_stage_spindles_with_threshold <- function(
   )
 
   result$epoch_map <- leval("EPOCH verbose")
-  result$spindles <- leval(
-    paste0(
-      "SPINDLES fc=11,15 sig=C3_M2,C4_M1,F3_M2,F4_M1 th=",
-      threshold,
-      " epoch so f-lwr=0.3 f-upr=4 t-neg-lwr=0.3 t-neg-upr=1.5 t-pos-lwr=0 t-pos-upr=1.0 uV-neg=-40 uV-p2p=75 nreps=100000"
-    )
-  )
+  result$spindles <- leval(build_spindle_command(threshold))
   lrefresh()
   result
+}
+
+build_spindle_command <- function(threshold, channels = PIPELINE_SPINDLE_CHANNELS) {
+  if (is.null(channels)) {
+    channels <- PIPELINE_SPINDLE_CHANNELS
+  }
+  sig_channels <- paste(channels, collapse = ",")
+  paste0(
+    "SPINDLES fc=11,15 sig=",
+    sig_channels,
+    " th=",
+    threshold,
+    " epoch so f-lwr=0.3 f-upr=4 t-neg-lwr=0.3 t-neg-upr=1.5 t-pos-lwr=0 t-pos-upr=1.0 uV-neg=-40 uV-p2p=75 nreps=100000"
+  )
 }
 
 extract_spindle_epoch_counts <- function(stage_threshold_results, sleep_stage) {

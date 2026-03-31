@@ -1,8 +1,8 @@
 library(luna)
 library(data.table)
 
-artifact_variant_dir <- function(base_dir, variant = "with_re") {
-  file.path(base_dir, variant)
+artifact_re_dir <- function(base_dir) {
+  file.path(base_dir, "with_re")
 }
 
 validate_edf_pair <- function(edf_path) {
@@ -34,15 +34,14 @@ validate_edf_pair <- function(edf_path) {
   )
 }
 
-write_filtered_edf_variant <- function(
+write_filtered_edf_with_re <- function(
   edf_path,
   base_dir = file.path(tempdir(), "luna-artifact-verification"),
-  variant = "with_re",
   force = FALSE
 ) {
   base_name <- tools::file_path_sans_ext(basename(edf_path))
   xml_path <- paste0(edf_path, ".XML")
-  variant_dir <- artifact_variant_dir(base_dir, variant)
+  variant_dir <- artifact_re_dir(base_dir)
   filtered_path <- file.path(variant_dir, paste0(base_name, ".edf"))
   annot_path <- file.path(variant_dir, paste0(base_name, ".annots"))
 
@@ -115,10 +114,13 @@ summarize_artifact_variant <- function(epoch_map, raw_emask_epochs, raw_any_flag
 
 compare_artifact_variants <- function(
   edf_path,
-  sleep_stage = c("N2", "N3"),
+  sleep_stage = PIPELINE_SLEEP_STAGES,
   base_dir = file.path(tempdir(), "luna-artifact-verification"),
   force = FALSE
 ) {
+  if (is.null(sleep_stage)) {
+    sleep_stage <- PIPELINE_SLEEP_STAGES
+  }
   sleep_stage <- match.arg(sleep_stage)
   xml_path <- validate_edf_pair(edf_path)
   qc <- get_raw_qc_data(edf_path)
@@ -137,17 +139,13 @@ compare_artifact_variants <- function(
       coalesce_zero(raw_epoch_qc$DELTA_MASK) == 1
   ]))
 
-  current_path <- write_filtered_edf_variant(
+  filtered_path <- write_filtered_edf_with_re(
     edf_path = edf_path,
     base_dir = base_dir,
-    variant = "with_re",
     force = force
   )
-  re_path <- current_path
-  current_all_epochs <- inspect_epoch_state(current_path, xml_path)
-  re_all_epochs <- inspect_epoch_state(re_path, xml_path)
-  current_stage_epochs <- inspect_epoch_state(current_path, xml_path, stage_mask = sleep_stage)
-  re_stage_epochs <- inspect_epoch_state(re_path, xml_path, stage_mask = sleep_stage)
+  filtered_all_epochs <- inspect_epoch_state(filtered_path, xml_path)
+  filtered_stage_epochs <- inspect_epoch_state(filtered_path, xml_path, stage_mask = sleep_stage)
 
   summary <- rbindlist(list(
     cbind(
@@ -162,24 +160,14 @@ compare_artifact_variants <- function(
       )
     ),
     cbind(
-      variant = "current",
+      variant = "filtered",
       stage = "all",
-      summarize_artifact_variant(current_all_epochs, raw_emask_epochs, raw_any_flag_epochs)
+      summarize_artifact_variant(filtered_all_epochs, raw_emask_epochs, raw_any_flag_epochs)
     ),
     cbind(
-      variant = "current",
+      variant = "filtered",
       stage = sleep_stage,
-      summarize_artifact_variant(current_stage_epochs, raw_emask_epochs, raw_any_flag_epochs)
-    ),
-    cbind(
-      variant = "with_re",
-      stage = "all",
-      summarize_artifact_variant(re_all_epochs, raw_emask_epochs, raw_any_flag_epochs)
-    ),
-    cbind(
-      variant = "with_re",
-      stage = sleep_stage,
-      summarize_artifact_variant(re_stage_epochs, raw_emask_epochs, raw_any_flag_epochs)
+      summarize_artifact_variant(filtered_stage_epochs, raw_emask_epochs, raw_any_flag_epochs)
     )
   ), fill = TRUE)
 
@@ -206,13 +194,10 @@ compare_artifact_variants <- function(
   list(
     summary = summary[],
     raw_qc = raw_epoch_qc,
-    current_all_epochs = current_all_epochs,
-    current_stage_epochs = current_stage_epochs,
-    with_re_all_epochs = re_all_epochs,
-    with_re_stage_epochs = re_stage_epochs,
+    filtered_all_epochs = filtered_all_epochs,
+    filtered_stage_epochs = filtered_stage_epochs,
     paths = list(
-      current = current_path,
-      with_re = re_path
+      filtered = filtered_path
     )
   )
 }
