@@ -7,7 +7,7 @@ separate when reasoning about "clean" analysis data:
 2. Sleep-stage restriction during downstream analysis.
 
 The current preprocessing write path in
-[`R/edf_processing.R`](../R/edf_processing.R) runs:
+[`R/edf_filtering.R`](../R/edf_filtering.R) runs:
 
 ```text
 EPOCH
@@ -41,8 +41,8 @@ just artifact-verify /absolute/path/to/BACH0001.edf N2
 
 This compares:
 
-- the current preprocessing write path
-- an otherwise identical write path with explicit artifact `RE`
+- the raw input QC profile
+- a filtered EDF produced by the current preprocessing write path (with `& RE` enabled)
 
 and reports, for both the full recording and the chosen stage-specific analysis
 view:
@@ -56,13 +56,12 @@ view:
 
 ## Interpretation
 
-- If the current variant retains raw `EMASK` epochs, then epoch-level artifact
-  exclusion is not happening before downstream analysis.
-- If the `with_re` variant removes raw `EMASK` epochs and the current variant
-  does not, then an explicit artifact `RE` is required to make the "cleaned"
-  EDF actually exclude them.
-- If both variants retain the same epoch set, then the current write path is
-  already behaving like an excluded-epoch path and no behavior change is needed.
+- If the filtered variant retains raw `EMASK` epochs, then epoch-level artifact
+  exclusion is not happening before downstream analysis in the current write path.
+- If the filtered variant removes raw `EMASK` epochs while raw input QC retains them,
+  then the current write path is enforcing explicit artifact rejection.
+- If both profiles retain the same epoch set, then there is no measurable difference
+  between raw input QC and filtered output for these checks.
 - The broader `any_flag` columns are a sensitivity check. They are expected to
   be larger than `EMASK`, because not every artifact-related flag necessarily
   becomes a dropped epoch.

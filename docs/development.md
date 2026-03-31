@@ -34,7 +34,13 @@ just artifact-verify /absolute/path/to/BACH0001.edf N2
 
 - `_targets.R` defines the graph.
 - `R/utils.R` contains table and summary helpers.
-- `R/edf_processing.R` contains Luna-loading and EDF/QC extraction helpers.
+- `R/edf_identifiers.R` contains EDF naming and profile inference helpers.
+- `R/edf_filtering.R` contains filtered EDF generation and loader helpers.
+- `R/edf_qc_pipeline.R` contains raw QC extraction for each EDF.
+- `R/edf_psd_base.R` contains PSD-threshold preprocessing for filtered EDFs.
+- `R/psd_pipeline.R` contains QC/PSD branch extraction from filtered EDFs.
+- `R/spindle_pipeline.R` contains spindle threshold extraction and downstream
+  processing helpers.
 - `R/qc.R` contains QC summaries and review tables.
 - `R/analysis.R` contains spindle/SO transforms and model helpers.
 - `R/artifact_verification.R` contains non-destructive checks for whether the
