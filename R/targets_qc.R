@@ -1,29 +1,6 @@
 build_qc_targets <- function() {
   list(
     tar_target(
-      line_noise_review,
-      get_line_noise_review(edf_files),
-      pattern = map(edf_files)
-    ),
-    tar_target(
-      line_noise_summary_branch,
-      line_noise_review$summary,
-      pattern = map(line_noise_review)
-    ),
-    tar_target(
-      line_noise_spectra_branch,
-      line_noise_review$spectra,
-      pattern = map(line_noise_review)
-    ),
-    tar_target(
-      line_noise_summary,
-      collect_data_tables(line_noise_summary_branch)
-    ),
-    tar_target(
-      line_noise_spectra,
-      collect_data_tables(line_noise_spectra_branch)
-    ),
-    tar_target(
       raw_qc_results,
       get_raw_qc(edf_files, xml_files),
       pattern = map(edf_files, xml_files)

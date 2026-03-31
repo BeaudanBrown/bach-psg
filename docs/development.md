@@ -40,7 +40,6 @@ just psd-csv
 - `R/psd_pipeline.R` contains QC/PSD branch extraction from filtered EDFs.
 - `R/spindle_pipeline.R` contains spindle threshold extraction and downstream
   processing helpers.
-- `R/qc.R` contains QC summaries and review tables.
 - `R/analysis.R` contains spindle/SO transforms and model helpers.
 
 ## Boundary
