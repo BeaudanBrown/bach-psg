@@ -10,9 +10,6 @@ run:
 psd-csv:
     Rscript -e 'targets::tar_make(psd_csv)'
 
-raw-input-summary:
-    Rscript -e 'targets::tar_make(raw_input_summary)'
-
 sync-m3:
     rsync -avrz --progress --delete m3:bc41_scratch2/Spindles/_targets/ ./_targets/
 
