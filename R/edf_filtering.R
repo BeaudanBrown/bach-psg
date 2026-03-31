@@ -110,7 +110,7 @@ create_filtered_edf <- function(edf_path, filter_profile_name = "base", filter_p
     dir.create(filtered_dir, recursive = TRUE)
   }
 
-  ledf(edf_path, raw_base_name, xml_path)
+  ledf(edf_path, raw_base_name, annots = xml_path)
   if (!is.null(filter_profile) && !is.list(filter_profile)) {
     stop("filter_profile must be a list")
   }
@@ -142,8 +142,8 @@ load_edf <- function(edf_path, xml_path = NULL) {
     xml_path <- get_raw_xml_path(raw_edf_path)
     filtered_annots_path <- file.path(dirname(edf_path), paste0(base_name, ".annots"))
     if (file.exists(filtered_annots_path)) {
-      xml_path <- paste(xml_path, filtered_annots_path, sep = ",")
+      xml_path <- c(xml_path, filtered_annots_path)
     }
   }
-  ledf(edf_path, base_name, xml_path)
+  ledf(edf_path, base_name, annots = xml_path)
 }
