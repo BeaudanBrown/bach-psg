@@ -31,10 +31,16 @@ extract_psd_b_ch <- function(psd_result) {
 }
 
 collect_psd_b_ch <- function(psd_results) {
-  psd_tables <- lapply(
-    collect_tables(psd_results),
-    extract_psd_b_ch
-  )
+  if (is.data.table(psd_results) || is.data.frame(psd_results)) {
+    psd_tables <- lapply(seq_len(nrow(psd_results)), function(i) {
+      extract_psd_b_ch(psd_results[i])
+    })
+  } else {
+    psd_tables <- lapply(
+      collect_tables(psd_results),
+      extract_psd_b_ch
+    )
+  }
   psd_tables <- Filter(Negate(is.null), psd_tables)
   if (!length(psd_tables)) {
     return(data.table())
