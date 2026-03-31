@@ -10,23 +10,17 @@ collect_data_tables <- function(x) {
 }
 
 extract_psd_b_ch <- function(psd_result) {
-  if (!is.null(psd_result$psd_b_ch)) {
-    out <- copy(as.data.table(psd_result$psd_b_ch[[1]]))
-  } else {
-    if (is.null(psd_result$psd) || is.null(psd_result$psd$B_CH)) {
-      return(NULL)
-    }
-    out <- copy(psd_result$psd$B_CH)
+  if (is.null(psd_result$psd_b_ch[[1]])) {
+    return(NULL)
   }
+  out <- copy(as.data.table(psd_result$psd_b_ch[[1]]))
   out$stage <- if (is.null(psd_result$sleep_stage)) {
     NA_character_
   } else {
     psd_result$sleep_stage[[1]]
   }
   out$filter_profile <- psd_result$filter_profile[[1]]
-  if (!is.null(psd_result$bach_id)) {
-    out$bach_id <- psd_result$bach_id[[1]]
-  }
+  out$bach_id <- psd_result$bach_id[[1]]
   out
 }
 
@@ -55,14 +49,10 @@ build_qc_csv_rows <- function(qc_results) {
   }
 
   qc_rows <- lapply(seq_len(nrow(qc_results)), function(i) {
-    if (!is.null(qc_results$qc_ch_eeg[[i]])) {
-      dt <- as.data.table(qc_results$qc_ch_eeg[[i]])
-    } else {
-      if (is.null(qc_results$qc[[i]]$CH_EEG)) {
-        return(NULL)
-      }
-      dt <- as.data.table(qc_results$qc[[i]]$CH_EEG)
+    if (is.null(qc_results$qc[[i]]$CH_EEG)) {
+      return(NULL)
     }
+    dt <- as.data.table(qc_results$qc[[i]]$CH_EEG)
     dt[, bach_id := qc_results$bach_id[i]]
     dt[, filter_profile := qc_results$filter_profile[i]]
     dt
