@@ -127,7 +127,7 @@ get_empirical_threshold <- function(
   channels = NULL
 ) {
   if (is.null(channels)) {
-    channels <- PIPELINE_SPINDLE_THRESHOLD_CHANNELS
+    channels <- c("C3_M2", "C4_M1")
   }
   CH_F <- data.table(ppt_results$spindles[[1]]$CH_F)
   CH_F <- CH_F[CH %in% channels & EMPTH < 20, ]
@@ -139,7 +139,7 @@ get_empirical_threshold_by_profile <- function(
   channels = NULL
 ) {
   if (is.null(channels)) {
-    channels <- PIPELINE_SPINDLE_THRESHOLD_CHANNELS
+    channels <- c("C3_M2", "C4_M1")
   }
   results_by_profile <- split(
     edf_results,
@@ -211,9 +211,9 @@ get_raw_stage_spindles_with_threshold <- function(
   result
 }
 
-build_spindle_command <- function(threshold, channels = PIPELINE_SPINDLE_CHANNELS) {
+build_spindle_command <- function(threshold, channels = NULL) {
   if (is.null(channels)) {
-    channels <- PIPELINE_SPINDLE_CHANNELS
+    channels <- c("C3_M2", "C4_M1", "F3_M2", "F4_M1")
   }
   sig_channels <- paste(channels, collapse = ",")
   paste0(

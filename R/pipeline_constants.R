@@ -38,8 +38,6 @@ PIPELINE_MODERATORS <- c(
   "ptau217_mean_conc_plasma",
   "gfap_mean_conc_plasma"
 )
-PIPELINE_SPINDLE_CHANNELS <- c("C3_M2", "C4_M1", "F3_M2", "F4_M1")
-PIPELINE_SPINDLE_THRESHOLD_CHANNELS <- c("C3_M2", "C4_M1")
 
 PIPELINE_CHANNEL_EXCLUSIONS <- data.table::data.table(
   bach_id = c(
