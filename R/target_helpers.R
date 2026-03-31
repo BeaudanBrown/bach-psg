@@ -55,25 +55,16 @@ build_qc_csv_rows <- function(qc_results) {
   }
 
   qc_rows <- lapply(seq_len(nrow(qc_results)), function(i) {
-    if (!is.null(qc_results$qc_channel_dt[[i]])) {
-      dt <- as.data.table(qc_results$qc_channel_dt[[i]])
-    } else if (!is.null(qc_results$qc_ch_eeg[[i]])) {
+    if (!is.null(qc_results$qc_ch_eeg[[i]])) {
       dt <- as.data.table(qc_results$qc_ch_eeg[[i]])
     } else {
-      if (is.null(qc_results$psd[[i]]$CH_EEG)) {
+      if (is.null(qc_results$qc[[i]]$CH_EEG)) {
         return(NULL)
       }
-      dt <- as.data.table(qc_results$psd[[i]]$CH_EEG)
+      dt <- as.data.table(qc_results$qc[[i]]$CH_EEG)
     }
-    if (!nrow(dt)) {
-      return(NULL)
-    }
-    if (!"bach_id" %in% names(dt)) {
-      dt[, bach_id := qc_results$bach_id[i]]
-    }
-    if (!"filter_profile" %in% names(dt)) {
-      dt[, filter_profile := qc_results$filter_profile[i]]
-    }
+    dt[, bach_id := qc_results$bach_id[i]]
+    dt[, filter_profile := qc_results$filter_profile[i]]
     dt
   })
   qc_rows <- Filter(Negate(is.null), qc_rows)
