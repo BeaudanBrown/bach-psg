@@ -86,7 +86,7 @@ create_filtered_edf <- function(edf_path, xml_path = NULL, filter_profile_name =
   ledf(edf_path, raw_base_name, annots = xml_path)
   commands <- c(
     filter_profile$commands %||% character(),
-    sprintf("WRITE-ANNOTS file=%s/%s.annots annot=artifacts", filtered_dir, filtered_name),
+    sprintf("WRITE-ANNOTS file=%s/%s.annots", filtered_dir, filtered_name),
     sprintf("WRITE edf-dir=%s edf=%s", filtered_dir, filtered_name)
   )
   cmd <- paste(commands[nzchar(commands)], collapse = " &\n    ")
@@ -101,15 +101,15 @@ create_filtered_edf <- function(edf_path, xml_path = NULL, filter_profile_name =
 load_edf <- function(edf_path, xml_path = NULL) {
   base_name <- tools::file_path_sans_ext(basename(edf_path))
   if (is.null(xml_path)) {
-    # Assume XML is named like the original EDF (not the filtered one)
-    # For filtered EDFs, the XML is still with the original
-    raw_edf_dir <- get_raw_edf_dir(edf_path)
-    raw_base_name <- infer_bach_id(edf_path)
-    raw_edf_path <- file.path(raw_edf_dir, paste0(raw_base_name, ".edf"))
-    xml_path <- get_raw_xml_path(raw_edf_path)
     filtered_annots_path <- file.path(dirname(edf_path), paste0(base_name, ".annots"))
     if (file.exists(filtered_annots_path)) {
-      xml_path <- c(xml_path, filtered_annots_path)
+      xml_path <- filtered_annots_path
+    } else {
+      # Assume XML is named like the original EDF (not the filtered one)
+      raw_edf_dir <- get_raw_edf_dir(edf_path)
+      raw_base_name <- infer_bach_id(edf_path)
+      raw_edf_path <- file.path(raw_edf_dir, paste0(raw_base_name, ".edf"))
+      xml_path <- get_raw_xml_path(raw_edf_path)
     }
   }
   ledf(edf_path, base_name, annots = xml_path)
