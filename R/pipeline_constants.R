@@ -70,6 +70,12 @@ PIPELINE_MODERATORS <- c(
 
 PIPELINE_CHANNEL_KEEP_OVERRIDES <- list(
   BACH0018 = c("C4_M1"),
+  BACH0026 = c("C4_M1"),
+  BACH0052 = c("C3_M2"),
+  BACH0088 = c("C4_M1"),
+  BACH0166 = c("C4_M1"),
+  BACH0188 = c("C3_M2"),
+  BACH0197 = c("C3_M2"),
   BACH0243 = c("C3_M2"),
-  BACH0052 = c("C3_M2")
+  BACH0254 = c("C4_M1")
 )
