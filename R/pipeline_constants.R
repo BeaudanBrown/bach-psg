@@ -1,4 +1,6 @@
 PIPELINE_ECG_CHANNEL <- "EKG"
+PIPELINE_EEG_CHANNELS <- c("C3_M2", "C4_M1")
+PIPELINE_EEG_SIGNAL_LIST <- paste(PIPELINE_EEG_CHANNELS, collapse = ",")
 
 PIPELINE_FILTER_PROFILES <- list(
   unfiltered = list(
@@ -10,10 +12,10 @@ PIPELINE_FILTER_PROFILES <- list(
     commands = c(
       "EPOCH",
       sprintf("SUPPRESS-ECG ecg=%s", PIPELINE_ECG_CHANNEL),
-      "EDGER sig=* epoch mask",
-      "ARTIFACTS",
-      "SIGSTATS",
-      "CHEP-MASK ep-th=3,3,3",
+      sprintf("EDGER sig=%s all epoch mask", PIPELINE_EEG_SIGNAL_LIST),
+      sprintf("ARTIFACTS sig=%s", PIPELINE_EEG_SIGNAL_LIST),
+      sprintf("SIGSTATS sig=%s epoch", PIPELINE_EEG_SIGNAL_LIST),
+      sprintf("CHEP-MASK sig=%s ep-th=3,3,3", PIPELINE_EEG_SIGNAL_LIST),
       "CHEP epoch",
       "DUMP-MASK annot=artifacts"
     )
@@ -22,10 +24,13 @@ PIPELINE_FILTER_PROFILES <- list(
     commands = c(
       "EPOCH",
       sprintf("SUPPRESS-ECG ecg=%s", PIPELINE_ECG_CHANNEL),
-      "EDGER sig=* epoch mask",
-      "ARTIFACTS",
-      "SIGSTATS",
-      "CHEP-MASK ep-th=3,3,3 max=200,0.05 clipped=0.05 flat=0.05",
+      sprintf("EDGER sig=%s all epoch mask", PIPELINE_EEG_SIGNAL_LIST),
+      sprintf("ARTIFACTS sig=%s", PIPELINE_EEG_SIGNAL_LIST),
+      sprintf("SIGSTATS sig=%s epoch", PIPELINE_EEG_SIGNAL_LIST),
+      sprintf(
+        "CHEP-MASK sig=%s ep-th=3,3,3 max=200,0.05 clipped=0.05 flat=0.05",
+        PIPELINE_EEG_SIGNAL_LIST
+      ),
       "CHEP epoch",
       "DUMP-MASK annot=artifacts"
     )
@@ -34,11 +39,14 @@ PIPELINE_FILTER_PROFILES <- list(
     commands = c(
       "EPOCH",
       sprintf("SUPPRESS-ECG ecg=%s", PIPELINE_ECG_CHANNEL),
-      "EDGER sig=* epoch mask",
+      sprintf("EDGER sig=%s all epoch mask", PIPELINE_EEG_SIGNAL_LIST),
       "FILTER bandpass=0.3,35 ripple=0.02 tw=1",
-      "ARTIFACTS",
-      "SIGSTATS",
-      "CHEP-MASK ep-th=3,3,3 max=200,0.05 clipped=0.05 flat=0.05",
+      sprintf("ARTIFACTS sig=%s", PIPELINE_EEG_SIGNAL_LIST),
+      sprintf("SIGSTATS sig=%s epoch", PIPELINE_EEG_SIGNAL_LIST),
+      sprintf(
+        "CHEP-MASK sig=%s ep-th=3,3,3 max=200,0.05 clipped=0.05 flat=0.05",
+        PIPELINE_EEG_SIGNAL_LIST
+      ),
       "CHEP epoch",
       "DUMP-MASK annot=artifacts"
     )
@@ -47,11 +55,14 @@ PIPELINE_FILTER_PROFILES <- list(
     commands = c(
       "EPOCH",
       sprintf("SUPPRESS-ECG ecg=%s", PIPELINE_ECG_CHANNEL),
-      "EDGER sig=* epoch mask",
+      sprintf("EDGER sig=%s all epoch mask", PIPELINE_EEG_SIGNAL_LIST),
       "FILTER bandstop=49,51 ripple=0.02 tw=1",
-      "ARTIFACTS",
-      "SIGSTATS",
-      "CHEP-MASK ep-th=3,3,3 max=200,0.05 clipped=0.05 flat=0.05",
+      sprintf("ARTIFACTS sig=%s", PIPELINE_EEG_SIGNAL_LIST),
+      sprintf("SIGSTATS sig=%s epoch", PIPELINE_EEG_SIGNAL_LIST),
+      sprintf(
+        "CHEP-MASK sig=%s ep-th=3,3,3 max=200,0.05 clipped=0.05 flat=0.05",
+        PIPELINE_EEG_SIGNAL_LIST
+      ),
       "CHEP epoch",
       "DUMP-MASK annot=artifacts"
     )
@@ -62,7 +73,7 @@ PIPELINE_SLEEP_STAGES <- c("N2", "N3")
 PIPELINE_SPINDLE_FREQS <- c(11, 15)
 PIPELINE_CHANNEL_PREFIXES <- c("C3", "C4")
 PIPELINE_MANDATORY_KEEP_CHANNELS <- c(PIPELINE_ECG_CHANNEL)
-PIPELINE_DEFAULT_KEEP_CHANNELS <- c("C3_M2", "C4_M1", PIPELINE_MANDATORY_KEEP_CHANNELS)
+PIPELINE_DEFAULT_KEEP_CHANNELS <- c(PIPELINE_EEG_CHANNELS, PIPELINE_MANDATORY_KEEP_CHANNELS)
 PIPELINE_OUTCOMES <- c("visualrepro2_total", "logicalmem_delay_total")
 PIPELINE_PREDICTORS <- c("overlap", "angle", "mag")
 PIPELINE_MODERATORS <- c(
