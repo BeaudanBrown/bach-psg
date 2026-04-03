@@ -170,13 +170,14 @@ get_stage_spindles_with_threshold <- function(
   # filtered_edf_paths may contain both .edf and .annots paths
   # Extract just the .edf file
   filtered_edf_path <- filtered_edf_paths[grepl("\\.edf$", filtered_edf_paths)]
+  filtered_annot_path <- get_filtered_annots_path(filtered_edf_paths)
   base_name <- infer_bach_id(filtered_edf_path)
   filter_profile <- infer_filter_profile(filtered_edf_path)
   result <- data.table(
     bach_id = base_name,
     filter_profile = filter_profile
   )
-  load_edf(filtered_edf_path)
+  load_edf(filtered_edf_path, filtered_annot_path)
 
   leval(paste0("MASK ifnot=", sleep_stage, " & RE"))
   result$psd <- leval("PSD spectrum")

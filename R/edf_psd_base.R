@@ -2,9 +2,10 @@ process_edf <- function(filtered_edf_paths) {
   # filtered_edf_paths may contain both .edf and .annots paths
   # Extract just the .edf file
   filtered_edf_path <- filtered_edf_paths[grepl("\\.edf$", filtered_edf_paths)]
+  filtered_annot_path <- get_filtered_annots_path(filtered_edf_paths)
   base_name <- infer_bach_id(filtered_edf_path)
   filter_profile <- infer_filter_profile(filtered_edf_path)
-  load_edf(filtered_edf_path)
+  load_edf(filtered_edf_path, filtered_annot_path)
 
   result <- data.table(
     bach_id = base_name,

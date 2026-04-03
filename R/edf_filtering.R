@@ -99,19 +99,20 @@ create_filtered_edf <- function(edf_path, xml_path = NULL, filter_profile_name =
   c(filtered_path, annot_path)
 }
 
-load_edf <- function(edf_path, xml_path = NULL) {
-  base_name <- tools::file_path_sans_ext(basename(edf_path))
-  if (is.null(xml_path)) {
-    filtered_annots_path <- file.path(dirname(edf_path), paste0(base_name, ".annots"))
-    if (file.exists(filtered_annots_path)) {
-      xml_path <- filtered_annots_path
-    } else {
-      # Assume XML is named like the original EDF (not the filtered one)
-      raw_edf_dir <- get_raw_edf_dir(edf_path)
-      raw_base_name <- infer_bach_id(edf_path)
-      raw_edf_path <- file.path(raw_edf_dir, paste0(raw_base_name, ".edf"))
-      xml_path <- get_raw_xml_path(raw_edf_path)
-    }
+get_filtered_annots_path <- function(filtered_edf_paths) {
+  annot_paths <- filtered_edf_paths[grepl("\\.annots$", filtered_edf_paths)]
+  if (!length(annot_paths)) {
+    stop("Expected filtered .annots path alongside filtered EDF output.")
   }
-  ledf(edf_path, base_name, annots = xml_path)
+
+  annot_paths[[1]]
+}
+
+load_edf <- function(edf_path, annot_path) {
+  base_name <- tools::file_path_sans_ext(basename(edf_path))
+  if (missing(annot_path) || is.null(annot_path) || !nzchar(annot_path)) {
+    stop("load_edf() requires an explicit annotation path (.XML or .annots).")
+  }
+
+  ledf(edf_path, base_name, annots = annot_path)
 }
