@@ -16,19 +16,20 @@ get_raw_xml_path <- function(edf_path) {
 lookup_keep_channels <- function(
   edf_path,
   channel_keep = PIPELINE_CHANNEL_KEEP_OVERRIDES,
-  default_keep_channels = PIPELINE_DEFAULT_KEEP_CHANNELS
+  default_keep_channels = PIPELINE_DEFAULT_KEEP_CHANNELS,
+  mandatory_keep_channels = PIPELINE_MANDATORY_KEEP_CHANNELS
 ) {
   bach_id <- infer_bach_id(edf_path)
   if (!length(channel_keep)) {
-    return(default_keep_channels)
+    return(unique(c(default_keep_channels, mandatory_keep_channels)))
   }
 
   matched <- channel_keep[[bach_id]]
   if (is.null(matched)) {
-    return(default_keep_channels)
+    return(unique(c(default_keep_channels, mandatory_keep_channels)))
   }
 
-  unique(unlist(matched, use.names = FALSE))
+  unique(c(unlist(matched, use.names = FALSE), mandatory_keep_channels))
 }
 
 create_channel_dropped_edf <- function(edf_path, xml_path = NULL, keep_channels = PIPELINE_DEFAULT_KEEP_CHANNELS) {
