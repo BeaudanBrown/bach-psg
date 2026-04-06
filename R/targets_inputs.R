@@ -22,13 +22,17 @@ build_input_targets <- function() {
       PIPELINE_CHANNEL_KEEP_OVERRIDES
     ),
     tar_target(
+      included_edf_files,
+      edf_files[!vapply(edf_files, is_excluded_edf, logical(1), channel_keep = channel_keep)]
+    ),
+    tar_target(
       raw_edf_inputs,
       list(
-        edf_path = edf_files,
-        xml_path = get_raw_xml_path(edf_files),
-        keep_channels = lookup_keep_channels(edf_files, channel_keep)
+        edf_path = included_edf_files,
+        xml_path = get_raw_xml_path(included_edf_files),
+        keep_channels = lookup_keep_channels(included_edf_files, channel_keep)
       ),
-      pattern = map(edf_files)
+      pattern = map(included_edf_files)
     )
   )
 }

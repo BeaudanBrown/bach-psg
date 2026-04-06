@@ -13,6 +13,31 @@ get_raw_xml_path <- function(edf_path) {
   candidates[[1]]
 }
 
+is_excluded_keep_override <- function(override_value) {
+  is.null(override_value)
+}
+
+has_keep_override <- function(bach_id, channel_keep = PIPELINE_CHANNEL_KEEP_OVERRIDES) {
+  bach_id %in% names(channel_keep)
+}
+
+lookup_keep_override <- function(bach_id, channel_keep = PIPELINE_CHANNEL_KEEP_OVERRIDES) {
+  if (!has_keep_override(bach_id, channel_keep)) {
+    return(NULL)
+  }
+
+  channel_keep[[bach_id]]
+}
+
+is_excluded_edf <- function(
+  edf_path,
+  channel_keep = PIPELINE_CHANNEL_KEEP_OVERRIDES
+) {
+  bach_id <- infer_bach_id(edf_path)
+  matched <- lookup_keep_override(bach_id, channel_keep)
+  has_keep_override(bach_id, channel_keep) && is_excluded_keep_override(matched)
+}
+
 lookup_keep_channels <- function(
   edf_path,
   channel_keep = PIPELINE_CHANNEL_KEEP_OVERRIDES,
@@ -24,9 +49,14 @@ lookup_keep_channels <- function(
     return(unique(c(default_keep_channels, mandatory_keep_channels)))
   }
 
-  matched <- channel_keep[[bach_id]]
-  if (is.null(matched)) {
+  if (!has_keep_override(bach_id, channel_keep)) {
     return(unique(c(default_keep_channels, mandatory_keep_channels)))
+  }
+
+  matched <- lookup_keep_override(bach_id, channel_keep)
+
+  if (is_excluded_keep_override(matched)) {
+    return(character())
   }
 
   unique(c(unlist(matched, use.names = FALSE), mandatory_keep_channels))
